@@ -1,16 +1,24 @@
 package me.vinceh121.gitswears;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Arrays;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.ContentSource;
 import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.DiffEntry.Side;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.errors.BinaryBlobException;
@@ -21,40 +29,58 @@ import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revplot.PlotWalk;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.pack.PackConfig;
-import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.util.LfsFactory;
 
 public class SwearCounter {
 	private static final Pattern WORD_PATTERN = Pattern.compile("\\W*\\w+\\W*", Pattern.CASE_INSENSITIVE);
-	private final Map<AbbreviatedObjectId, CommitCount> map = new HashMap<>();
+	private final Map<AbbreviatedObjectId, CommitCount> map = new LinkedHashMap<>();
 	private final Collection<String> swears;
 	private final Git git;
+	private final Repository repo;
 	private final ObjectReader reader;
 	private final ContentSource source;
 	private final ContentSource.Pair sourcePair;
 
 	public static void main(String[] args) {
 		try {
+			final List<String> wordList = new ArrayList<>();
+
+			final BufferedReader br = new BufferedReader(new InputStreamReader(
+					new URL("https://raw.githubusercontent.com/RobertJGabriel/Google-profanity-words/master/list.txt")
+							.openStream()));
+
+			String s;
+			while ((s = br.readLine()) != null) {
+				wordList.add(s.trim());
+			}
+
+			System.out.println("Word list: " + wordList);
+
 			final SwearCounter counter
-					= new SwearCounter(new FileRepository("/home/vincent/StudioProjects/cj-getter/.git"),
-							Arrays.asList("fucking", "fuck"));
+					= new SwearCounter(new FileRepository("/home/vincent/StudioProjects/cj-getter/.git"), wordList);
 			counter.count();
 			System.out.println(counter.getMap());
+			System.out.println("Final: " + counter.countFinal());
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (BinaryBlobException e) {
+			e.printStackTrace();
+		} catch (GitAPIException e) {
 			e.printStackTrace();
 		}
 	}
 
 	public SwearCounter(final Repository repo, final Collection<String> swears) {
 		this.git = Git.wrap(repo);
+		this.repo = repo;
 		this.swears = swears;
 		this.reader = repo.newObjectReader();
 		this.source = ContentSource.create(this.reader);
@@ -62,29 +88,29 @@ public class SwearCounter {
 	}
 
 	public void count() throws MissingObjectException, IncorrectObjectTypeException, CorruptObjectException,
-			IOException, BinaryBlobException {
-		final PlotWalk walk = new PlotWalk(git.getRepository());
-		walk.markStart(walk.parseCommit(git.getRepository().findRef("master").getObjectId()));
-		for (final RevCommit c : walk) {
+			IOException, BinaryBlobException, GitAPIException {
+		final RevWalk revWalk = new RevWalk(repo);
+		revWalk.markStart(repo.parseCommit(repo.findRef("master").getObjectId()));
+		for (final RevCommit c : revWalk) {
+			System.out.println(c.getId() + ": " + c.getFullMessage());
 			this.countMessage(c);
 			if (c.getParentCount() == 0) {
 				continue;
 			}
-			 final TreeWalk treeWalk = new TreeWalk(git.getRepository());
-			 treeWalk.addTree(c.getId());
-			 treeWalk.addTree(c.getParent(0).getId());
-			 
-//			final DiffFormatter diffFmt = new DiffFormatter(NullOutputStream.INSTANCE);
-//			diffFmt.setRepository(repo);
-//			System.out.println(c.getId());
-//			final List<DiffEntry> diff = diffFmt.scan(c.getId(), c.getParent(0).getId());
-			for (final DiffEntry e : diff) {
+
+			final ObjectId oldHead = c.getParent(0).getTree();
+			final ObjectId head = c.getTree();
+
+			final CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
+			oldTreeIter.reset(reader, oldHead);
+			final CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
+			newTreeIter.reset(reader, head);
+
+			for (final DiffEntry e : this.git.diff().setNewTree(newTreeIter).setOldTree(oldTreeIter).call()) {
 				this.countDiff(e);
 			}
-			diffFmt.close();
-			// treeWalk.close();
 		}
-		walk.close();
+		revWalk.close();
 	}
 
 	private void countMessage(final RevCommit commit) {
@@ -100,23 +126,31 @@ public class SwearCounter {
 	}
 
 	private void countDiff(final DiffEntry e) throws IOException, BinaryBlobException {
-		final String txt = new String(this.open(Side.NEW, e).getRawContent());
-//		System.out.println(txt);
-		System.out.println("------------------------");
-		final Matcher matcher = WORD_PATTERN.matcher(txt);
-		while (matcher.find()) {
-			final String word = matcher.group().toLowerCase().trim();
-			if (swears.contains(word))
-				switch (e.getChangeType()) {
-				case ADD:
+		final String newTxt = new String(this.open(Side.NEW, e).getRawContent());
+		final String oldTxt = new String(this.open(Side.OLD, e).getRawContent());
+
+		switch (e.getChangeType()) {
+		case MODIFY:
+		case ADD:
+			final Matcher newMatcher = WORD_PATTERN.matcher(newTxt);
+			while (newMatcher.find()) {
+				final String word = newMatcher.group().toLowerCase().trim();
+				if (swears.contains(word))
 					this.getOrNewCommitCount(e.getNewId()).getOrNew(word).increaseAdded();
-					break;
-				case DELETE:
+			}
+			if (e.getChangeType() == ChangeType.ADD)
+				break;
+		case DELETE:
+			final Matcher oldMatcher = WORD_PATTERN.matcher(oldTxt);
+			while (oldMatcher.find()) {
+				final String word = oldMatcher.group().toLowerCase().trim();
+				if (swears.contains(word))
 					this.getOrNewCommitCount(e.getNewId()).getOrNew(word).increaseRemoved();
-					break;
-				default:
-					break;
-				}
+			}
+			if (e.getChangeType() == ChangeType.DELETE)
+				break;
+		default:
+			break;
 		}
 	}
 
@@ -149,6 +183,33 @@ public class SwearCounter {
 		} catch (final BinaryBlobException e) {
 			return RawText.EMPTY_TEXT;
 		}
+	}
+
+	public Map<String, WordCount> countFinal() {
+		final Map<String, WordCount> fin = new Hashtable<>();
+		final List<AbbreviatedObjectId> ids = new ArrayList<>(this.map.keySet());
+		Collections.reverse(ids);
+
+		for (final AbbreviatedObjectId oid : ids) {
+			final CommitCount count = this.map.get(oid);
+			for (final String word : count.keySet()) {
+				final WordCount wCount = count.get(word);
+
+				final WordCount finCount;
+				if (fin.containsKey(word)) {
+					finCount = fin.get(word);
+				} else {
+					finCount = new WordCount();
+					finCount.setWord(word);
+					fin.put(word, finCount);
+				}
+
+				finCount.setAdded(finCount.getAdded() + wCount.getAdded());
+				finCount.setMessage(finCount.getMessage() + wCount.getMessage());
+				finCount.setRemoved(finCount.getRemoved() + wCount.getRemoved());
+			}
+		}
+		return fin;
 	}
 
 	public Map<AbbreviatedObjectId, CommitCount> getMap() {
