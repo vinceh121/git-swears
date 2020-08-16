@@ -92,7 +92,6 @@ public class SwearCounter {
 		final RevWalk revWalk = new RevWalk(repo);
 		revWalk.markStart(repo.parseCommit(repo.findRef("master").getObjectId()));
 		for (final RevCommit c : revWalk) {
-			System.out.println(c.getId() + ": " + c.getFullMessage());
 			this.countMessage(c);
 			if (c.getParentCount() == 0) {
 				continue;
