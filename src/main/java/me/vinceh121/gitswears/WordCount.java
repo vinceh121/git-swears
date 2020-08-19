@@ -1,5 +1,7 @@
 package me.vinceh121.gitswears;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class WordCount {
 	private String word;
 	private long removed, added, message;
@@ -48,9 +50,13 @@ public class WordCount {
 		this.message++;
 	}
 
+	@JsonIgnore
+	public long getEffectiveCount() {
+		return (added - removed) + message;
+	}
+
 	@Override
 	public String toString() {
 		return "WordCount [word=" + word + ", removed=" + removed + ", added=" + added + ", message=" + message + "]";
 	}
-
 }

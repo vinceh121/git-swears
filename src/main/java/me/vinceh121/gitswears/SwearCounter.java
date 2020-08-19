@@ -1,6 +1,8 @@
 package me.vinceh121.gitswears;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -13,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.imageio.ImageIO;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -39,6 +43,9 @@ import org.eclipse.jgit.storage.pack.PackConfig;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.util.LfsFactory;
 
+import me.vinceh121.gitswears.graph.GraphGenerator;
+import me.vinceh121.gitswears.graph.TotalTimeLine;
+
 public class SwearCounter {
 	private static final Pattern WORD_PATTERN = Pattern.compile("\\W*\\w+\\W*", Pattern.CASE_INSENSITIVE);
 	private final Map<AbbreviatedObjectId, CommitCount> map = new LinkedHashMap<>();
@@ -48,6 +55,7 @@ public class SwearCounter {
 	private final ObjectReader reader;
 	private final ContentSource source;
 	private final ContentSource.Pair sourcePair;
+	private String mainRef = "master";
 
 	public static void main(String[] args) {
 		try {
@@ -65,10 +73,18 @@ public class SwearCounter {
 			System.out.println("Word list: " + wordList);
 
 			final SwearCounter counter
-					= new SwearCounter(new FileRepository("/home/vincent/StudioProjects/cj-getter/.git"), wordList);
+					= new SwearCounter(new FileRepository("/home/vincent/Software/powercord/.git"), wordList);
+			counter.setMainRef("v2-dev");
 			counter.count();
 			System.out.println(counter.getMap());
 			System.out.println("Final: " + counter.countFinal());
+
+			final GraphGenerator generator = new TotalTimeLine(counter);
+			generator.setTitle("Swear count for powercord codebase");
+
+			final BufferedImage img = generator.generateImage();
+
+			ImageIO.write(img, "png", new FileOutputStream("out.png"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (BinaryBlobException e) {
@@ -90,7 +106,7 @@ public class SwearCounter {
 	public void count() throws MissingObjectException, IncorrectObjectTypeException, CorruptObjectException,
 			IOException, BinaryBlobException, GitAPIException {
 		final RevWalk revWalk = new RevWalk(repo);
-		revWalk.markStart(repo.parseCommit(repo.findRef("master").getObjectId()));
+		revWalk.markStart(repo.parseCommit(repo.findRef(mainRef).getObjectId()));
 		for (final RevCommit c : revWalk) {
 			this.countMessage(c);
 			if (c.getParentCount() == 0) {
@@ -214,4 +230,21 @@ public class SwearCounter {
 	public Map<AbbreviatedObjectId, CommitCount> getMap() {
 		return map;
 	}
+
+	public Repository getRepo() {
+		return repo;
+	}
+
+	public Git getGit() {
+		return git;
+	}
+
+	public String getMainRef() {
+		return mainRef;
+	}
+
+	public void setMainRef(String mainRef) {
+		this.mainRef = mainRef;
+	}
+
 }
