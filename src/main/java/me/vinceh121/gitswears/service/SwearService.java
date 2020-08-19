@@ -55,7 +55,7 @@ public class SwearService {
 		this.rootDir.toFile().mkdirs();
 
 		try {
-			final BufferedReader br = new BufferedReader(new FileReader("./swears.txt"));
+			final BufferedReader br = new BufferedReader(new FileReader("/etc/gitswears/swears.txt"));
 			String line;
 			while ((line = br.readLine()) != null) {
 				swearList.add(line.trim());
