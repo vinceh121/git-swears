@@ -75,7 +75,7 @@ public class SwearService {
 
 		this.vertx = Vertx.vertx();
 
-		final Redis redis = Redis.createClient(vertx, config.getProperty("regis.constring"));
+		final Redis redis = Redis.createClient(vertx, config.getProperty("redis.constring"));
 		redis.connect(redisRes -> {});
 		this.redisApi = RedisAPI.api(redis);
 
