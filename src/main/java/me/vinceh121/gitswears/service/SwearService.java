@@ -4,9 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -116,7 +116,12 @@ public class SwearService {
 			return;
 		}
 
-		final String repoId = URLEncoder.encode(uri, Charset.defaultCharset());
+		final String repoId;
+		try {
+			repoId = URLEncoder.encode(uri, "UTF-8");
+		} catch (UnsupportedEncodingException e1) {
+			throw new RuntimeException(e1);
+		}
 
 		final String branch = ctx.request().getParam("branch") != null ? ctx.request().getParam("branch") : "master";
 
