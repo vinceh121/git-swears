@@ -2,6 +2,7 @@ package me.vinceh121.gitswears.service;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -12,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Vector;
 
 import org.eclipse.jgit.api.CloneCommand;
@@ -36,6 +38,7 @@ import me.vinceh121.gitswears.SwearCounter;
 
 public class SwearService {
 	private static final Logger LOG = LoggerFactory.getLogger(SwearService.class);
+	private final Properties config = new Properties();
 	private final Collection<String> allowedHosts = Arrays.asList("github.com", "gitlab.com");
 	private final Collection<String> swearList = new Vector<>();
 	private final Vertx vertx;
@@ -55,6 +58,8 @@ public class SwearService {
 		this.rootDir.toFile().mkdirs();
 
 		try {
+			config.load(new FileInputStream("/etc/gitswears/config.properties"));
+
 			final BufferedReader br = new BufferedReader(new FileReader("/etc/gitswears/swears.txt"));
 			String line;
 			while ((line = br.readLine()) != null) {
@@ -66,11 +71,11 @@ public class SwearService {
 		}
 
 		this.rateLimiter = new RateLimiter();
-		this.rateLimiter.setDelay(30_000);
+		this.rateLimiter.setDelay(Integer.parseInt(config.getProperty("ratelimit.delay")));
 
 		this.vertx = Vertx.vertx();
 
-		final Redis redis = Redis.createClient(vertx, "redis://localhost");
+		final Redis redis = Redis.createClient(vertx, config.getProperty("regis.constring"));
 		redis.connect(redisRes -> {});
 		this.redisApi = RedisAPI.api(redis);
 
@@ -82,7 +87,8 @@ public class SwearService {
 	}
 
 	public void start() {
-		this.server.listen(8800, "127.0.0.1");
+		this.server.listen(Integer.parseInt(this.config.getProperty("http.port")),
+				this.config.getProperty("http.host"));
 		LOG.info("Started!");
 	}
 
@@ -160,7 +166,8 @@ public class SwearService {
 					LOG.info("[{}] count success for repo {}", clientId, uri);
 					final JsonObject objRes = JsonUtils.countResultToJson(countRes.result());
 					this.response(ctx, 201, objRes);
-					this.redisApi.setex(repoId + "." + branch, "86400", objRes.encode(), resRes -> {});
+					this.redisApi.setex(repoId + "." + branch, this.config.getProperty("redis.cachetime"),
+							objRes.encode(), resRes -> {});
 					if (cloneRes.result().getRepository() instanceof FileRepository) {
 						final FileRepository fileRepo = (FileRepository) cloneRes.result().getRepository();
 						this.vertx.fileSystem().deleteRecursive(fileRepo.getDirectory().getAbsolutePath(), true, null);

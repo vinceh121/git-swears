@@ -6,10 +6,33 @@
 	<artifactId>git-swears</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Swearing Counter in git</name>
+
+	<licenses>
+		<license>
+			<name>GNU General Public License v3.0 or later</name>
+			<url>http://www.spdx.org/licenses/GPL-3.0+</url>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<id>vinceh121</id>
+			<email>vincent.hyvert@sfr.fr</email>
+			<timezone>Europe/Paris</timezone>
+			<url>https://vinceh121.me</url>
+		</developer>
+	</developers>
+
+	<scm>
+		<url>https://github.com/vinceh121/git-swears</url>
+	</scm>
+
 	<properties>
+		<java.version>1.8</java.version>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<maven.compiler.source>1.8</maven.compiler.source>
 	</properties>
+
 	<dependencies>
 		<!-- https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit -->
 		<dependency>
@@ -39,4 +62,22 @@
 			<version>1.2.3</version>
 		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>me.vinceh121.gitswears.service.SwearService</mainClass>
+						</manifest>
+					</archive>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
