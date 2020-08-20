@@ -129,6 +129,9 @@ public class SwearService {
 				return;
 			}
 
+			this.redisApi.set(Arrays.asList(repoId + "." + branch,
+					new JsonObject().put("message", "Counting is in progress").encode()), redisRes -> {});
+
 			this.cloneRepo(uri, branch, repoId).onComplete(cloneRes -> {
 				if (cloneRes.failed()) {
 					this.error(ctx, 503, "Clone failed: " + cloneRes.cause());
