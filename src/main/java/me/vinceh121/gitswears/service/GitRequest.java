@@ -7,14 +7,12 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Map;
 
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.BinaryBlobException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,10 +21,9 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.redis.client.Response;
-import me.vinceh121.gitswears.CommitCount;
 import me.vinceh121.gitswears.SwearCounter;
 
-public abstract class GitRequest implements Handler<RoutingContext> {
+public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	public static final String PROGRESS_VALUE = new JsonObject().put("message", "Counting is in progress").encode();
 	private static final Logger LOG = LoggerFactory.getLogger(GitRequest.class);
 	private final SwearService swearService;
@@ -93,7 +90,7 @@ public abstract class GitRequest implements Handler<RoutingContext> {
 				}
 				LOG.info("[{}] clone success for repo {} branch {}", clientId, uri, branch);
 
-				this.swearService.getVertx().<Map<AbbreviatedObjectId, CommitCount>>executeBlocking(promise -> {
+				this.swearService.getVertx().<SwearCounter>executeBlocking(promise -> {
 					final SwearCounter swearCounter
 							= new SwearCounter(cloneRes.result().getRepository(), this.swearService.getSwearList());
 					swearCounter.setMainRef(branch);
@@ -103,20 +100,29 @@ public abstract class GitRequest implements Handler<RoutingContext> {
 						promise.fail(e);
 						return;
 					}
-					promise.complete(swearCounter.getMap());
+					promise.complete(swearCounter);
 				}, countRes -> {
 					if (countRes.failed()) {
 						this.error(ctx, 500, "Error while counting");
 						LOG.error("[" + clientId + "] Git error in counting", countRes.cause());
 						return;
 					}
-					final Map<AbbreviatedObjectId, CommitCount> countMap = countRes.result();
+					final SwearCounter count = countRes.result();
 					LOG.info("[{}] count success for repo {}", clientId, uri);
-					this.sendResult(ctx, countMap);
+					final T res;
+					try {
+						res = this.sendResult(ctx, count);
+					} catch (final RuntimeException e) {
+						this.error(ctx, 400, "Error while sending result: " + e);
+						LOG.error("[" + clientId + "] error sending result", e);
+						return;
+					}
 
-					this.swearService.getRedisApi()
-							.setex(jobName, this.swearService.getConfig().getProperty("redis.cachetime"),
-									this.putInCache(countMap), redisRes -> {});
+					final String cacheValue = this.putInCache(res);
+					if (cacheValue != null)
+						this.swearService.getRedisApi()
+								.setex(jobName, this.swearService.getConfig().getProperty("redis.cachetime"),
+										cacheValue, redisRes -> {});
 					if (cloneRes.result().getRepository() instanceof FileRepository) {
 						final FileRepository fileRepo = (FileRepository) cloneRes.result().getRepository();
 						this.swearService.getVertx()
@@ -168,9 +174,9 @@ public abstract class GitRequest implements Handler<RoutingContext> {
 
 	protected abstract void sendCached(final RoutingContext ctx, final Response redisRes);
 
-	protected abstract void sendResult(final RoutingContext ctx, final Map<AbbreviatedObjectId, CommitCount> countMap);
+	protected abstract T sendResult(final RoutingContext ctx, final SwearCounter counter);
 
-	protected abstract String putInCache(final Map<AbbreviatedObjectId, CommitCount> countMap);
+	protected abstract String putInCache(final T result);
 
 	public void error(final RoutingContext ctx, final int status, final String message) {
 		this.response(ctx, status, new JsonObject().put("error", message));

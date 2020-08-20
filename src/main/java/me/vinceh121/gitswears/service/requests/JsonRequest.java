@@ -1,18 +1,14 @@
 package me.vinceh121.gitswears.service.requests;
 
-import java.util.Map;
-
-import org.eclipse.jgit.lib.AbbreviatedObjectId;
-
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.redis.client.Response;
-import me.vinceh121.gitswears.CommitCount;
+import me.vinceh121.gitswears.SwearCounter;
 import me.vinceh121.gitswears.service.GitRequest;
 import me.vinceh121.gitswears.service.JsonUtils;
 import me.vinceh121.gitswears.service.SwearService;
 
-public class JsonRequest extends GitRequest {
+public class JsonRequest extends GitRequest<JsonObject> {
 
 	public JsonRequest(SwearService swearService) {
 		super(swearService, "json");
@@ -24,15 +20,15 @@ public class JsonRequest extends GitRequest {
 	}
 
 	@Override
-	protected void sendResult(final RoutingContext ctx, Map<AbbreviatedObjectId, CommitCount> countMap) {
-		final JsonObject objRes = JsonUtils.countResultToJson(countMap);
+	protected JsonObject sendResult(final RoutingContext ctx, final SwearCounter counter) {
+		final JsonObject objRes = JsonUtils.countResultToJson(counter.getMap());
 		this.response(ctx, 201, objRes);
+		return objRes;
 	}
 
 	@Override
-	protected String putInCache(Map<AbbreviatedObjectId, CommitCount> countMap) {
-		final JsonObject objRes = JsonUtils.countResultToJson(countMap);
-		return objRes.encode();
+	protected String putInCache(final JsonObject content) {
+		return content.encode();
 	}
 
 }

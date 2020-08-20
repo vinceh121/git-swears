@@ -61,6 +61,7 @@ public class SwearCounter {
 		revWalk.markStart(repo.parseCommit(repo.findRef(mainRef).getObjectId()));
 		for (final RevCommit c : revWalk) {
 			this.countMessage(c);
+
 			if (c.getParentCount() == 0) {
 				continue;
 			}
@@ -74,7 +75,7 @@ public class SwearCounter {
 			newTreeIter.reset(reader, head);
 
 			for (final DiffEntry e : this.git.diff().setNewTree(newTreeIter).setOldTree(oldTreeIter).call()) {
-				this.countDiff(e);
+				this.countDiff(e, AbbreviatedObjectId.fromObjectId(c.getId()));
 			}
 		}
 		revWalk.close();
@@ -92,7 +93,7 @@ public class SwearCounter {
 		}
 	}
 
-	private void countDiff(final DiffEntry e) throws IOException, BinaryBlobException {
+	private void countDiff(final DiffEntry e, final AbbreviatedObjectId oid) throws IOException, BinaryBlobException {
 		final String newTxt = new String(this.open(Side.NEW, e).getRawContent());
 		final String oldTxt = new String(this.open(Side.OLD, e).getRawContent());
 
@@ -103,7 +104,7 @@ public class SwearCounter {
 			while (newMatcher.find()) {
 				final String word = newMatcher.group().toLowerCase().trim();
 				if (swears.contains(word))
-					this.getOrNewCommitCount(e.getNewId()).getOrNew(word).increaseAdded();
+					this.getOrNewCommitCount(oid).getOrNew(word).increaseAdded();
 			}
 			if (e.getChangeType() == ChangeType.ADD)
 				break;
@@ -112,7 +113,7 @@ public class SwearCounter {
 			while (oldMatcher.find()) {
 				final String word = oldMatcher.group().toLowerCase().trim();
 				if (swears.contains(word))
-					this.getOrNewCommitCount(e.getNewId()).getOrNew(word).increaseRemoved();
+					this.getOrNewCommitCount(oid).getOrNew(word).increaseRemoved();
 			}
 			if (e.getChangeType() == ChangeType.DELETE)
 				break;

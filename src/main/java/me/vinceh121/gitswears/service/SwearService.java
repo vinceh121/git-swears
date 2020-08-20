@@ -19,6 +19,7 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisAPI;
+import me.vinceh121.gitswears.service.requests.GraphRequest;
 import me.vinceh121.gitswears.service.requests.JsonRequest;
 
 public class SwearService {
@@ -65,6 +66,7 @@ public class SwearService {
 		this.server.requestHandler(router);
 
 		this.router.get("/count.json").handler(new JsonRequest(this));
+		this.router.get("/count.png").handler(new GraphRequest(this));
 	}
 
 	public void start() {
