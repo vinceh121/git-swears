@@ -45,7 +45,6 @@ public class SwearService {
 	private final HttpServer server;
 	private final Router router;
 	private final Path rootDir;
-	private final RateLimiter rateLimiter;
 	private final RedisAPI redisApi;
 
 	public static void main(String[] args) {
@@ -70,9 +69,6 @@ public class SwearService {
 			throw new RuntimeException(e);
 		}
 
-		this.rateLimiter = new RateLimiter();
-		this.rateLimiter.setDelay(Integer.parseInt(config.getProperty("ratelimit.delay")));
-
 		this.vertx = Vertx.vertx();
 
 		final Redis redis = Redis.createClient(vertx, config.getProperty("redis.constring"));
@@ -93,12 +89,7 @@ public class SwearService {
 	}
 
 	private void handleSwearCountJson(final RoutingContext ctx) {
-		final String clientId = ctx.request().remoteAddress().host();
-		if (!this.rateLimiter.canUse(clientId)) {
-			this.error(ctx, 429, "your ip is being rate-limited");
-			return;
-		}
-		this.rateLimiter.hit(clientId);
+		final String clientId = ctx.request().getHeader("X-Forwarded-For");
 
 		final String uri = ctx.request().getParam("uri");
 		if (uri == null) {
