@@ -9,11 +9,12 @@ The JSON endpoint returning the count of swears is the following:
 https://swear.vinceh121.me/count.json?uri=repo_uri[&branch=branch_name]
 ```
 
-The (upcoming) endpoint returning PNG images of graphs is the following:
+The endpoint returning PNG images of graphs is the following:
 
 ```
 https://swear.vinceh121.me/count.png?type=graph_type&uri=repo_uri[&branch=branch_name]
 ```
+*graph_type* is either `histogram` or `timeline`
 
 ## How to use the command line
 
