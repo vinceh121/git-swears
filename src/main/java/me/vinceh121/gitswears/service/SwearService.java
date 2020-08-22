@@ -56,6 +56,7 @@ public class SwearService {
 		}
 
 		this.vertx = Vertx.vertx();
+		this.vertx.exceptionHandler(t -> LOG.error("Unexpected Vert.x exception", t));
 
 		final Redis redis = Redis.createClient(vertx, config.getProperty("redis.constring"));
 		redis.connect(redisRes -> {});
@@ -63,6 +64,8 @@ public class SwearService {
 
 		this.server = vertx.createHttpServer();
 		this.router = Router.router(vertx);
+		this.router.errorHandler(500,
+				ctx -> LOG.error("Unexpected exception in route " + ctx.normalisedPath(), ctx.failure()));
 		this.server.requestHandler(router);
 
 		this.router.get("/count.json").handler(new JsonRequest(this));

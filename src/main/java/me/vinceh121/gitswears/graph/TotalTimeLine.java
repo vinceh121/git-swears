@@ -44,7 +44,7 @@ public class TotalTimeLine extends GraphGenerator {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			final Date date = new Date(com.getCommitTime());
+			final Date date = new Date(((long) com.getCommitTime()) * 1000L);
 			serie.addOrUpdate(new Second(date), this.totalEffective(c));
 		}
 		revWalk.close();
