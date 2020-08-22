@@ -3,6 +3,8 @@ package me.vinceh121.gitswears.service.requests;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -25,6 +27,19 @@ public class GraphRequest extends GitRequest<BufferedImage> {
 	}
 
 	@Override
+	protected void validateSyntax(RoutingContext ctx) {
+		final String type = ctx.request().getParam("type");
+		if (type == null) {
+			throw new RuntimeException("missing field type");
+		}
+	}
+
+	@Override
+	protected List<String> getExtraJobKey(RoutingContext ctx) {
+		return Arrays.asList(ctx.request().getParam("type"));
+	}
+
+	@Override
 	protected void sendCached(final RoutingContext ctx, final Response redisRes) {
 		ctx.response().putHeader("Content-Type", "image/png");
 		ctx.response().end(Buffer.buffer(Hex.decode(redisRes.toString())));
@@ -33,9 +48,7 @@ public class GraphRequest extends GitRequest<BufferedImage> {
 	@Override
 	protected BufferedImage sendResult(final RoutingContext ctx, final SwearCounter counter) {
 		final String type = ctx.request().getParam("type");
-		if (type == null) {
-			throw new RuntimeException("missing field type");
-		}
+
 		final GraphGenerator gen;
 		switch (type) {
 		case "histogram":

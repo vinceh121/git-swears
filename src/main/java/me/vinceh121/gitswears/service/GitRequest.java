@@ -6,6 +6,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
@@ -74,7 +77,18 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 		final String branch = ctx.request().getParam("branch") != null ? ctx.request().getParam("branch") : "master";
 		final boolean includeMessages = !"n".equalsIgnoreCase(ctx.request().getParam("messages"));
 
-		final String jobName = String.join(".", this.requestName, repoId, branch, String.valueOf(includeMessages));
+		try {
+			this.validateSyntax(ctx);
+		} catch (final Exception e) {
+			this.error(ctx, 400, "Failed to validate syntax", e);
+			return;
+		}
+
+		final List<String> jobElements
+				= Arrays.asList(this.requestName, repoId, branch, String.valueOf(includeMessages));
+		jobElements.addAll(this.getExtraJobKey(ctx));
+
+		final String jobName = String.join(".", jobElements);
 
 		this.fetchCached(jobName).onComplete(cacheRes -> {
 			if (cacheRes.succeeded()) {
@@ -215,6 +229,13 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	protected abstract T sendResult(final RoutingContext ctx, final SwearCounter counter);
 
 	protected abstract String putInCache(final T result);
+
+	protected List<String> getExtraJobKey(final RoutingContext ctx) {
+		return Collections.emptyList();
+	}
+
+	protected void validateSyntax(final RoutingContext ctx) {
+	}
 
 	public void error(final RoutingContext ctx, final int status, final String msg) {
 		this.error(ctx, status, msg, new Exception(msg));
