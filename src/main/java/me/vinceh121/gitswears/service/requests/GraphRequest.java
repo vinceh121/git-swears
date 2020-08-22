@@ -20,18 +20,18 @@ import me.vinceh121.gitswears.service.SwearService;
 
 public class GraphRequest extends GitRequest<BufferedImage> {
 
-	public GraphRequest(SwearService swearService) {
+	public GraphRequest(final SwearService swearService) {
 		super(swearService, "graph");
 	}
 
 	@Override
-	protected void sendCached(RoutingContext ctx, Response redisRes) {
+	protected void sendCached(final RoutingContext ctx, final Response redisRes) {
 		ctx.response().putHeader("Content-Type", "image/png");
 		ctx.response().end(Buffer.buffer(Hex.decode(redisRes.toString())));
 	}
 
 	@Override
-	protected BufferedImage sendResult(RoutingContext ctx, SwearCounter counter) {
+	protected BufferedImage sendResult(final RoutingContext ctx, final SwearCounter counter) {
 		final String type = ctx.request().getParam("type");
 		if (type == null) {
 			throw new RuntimeException("missing field type");
@@ -53,7 +53,7 @@ public class GraphRequest extends GitRequest<BufferedImage> {
 		try {
 			ImageIO.write(img, "png", out);
 			out.flush();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			throw new RuntimeException(e);
 		}
 		ctx.response().putHeader("Content-Type", "image/png");
@@ -67,7 +67,7 @@ public class GraphRequest extends GitRequest<BufferedImage> {
 		try {
 			ImageIO.write(img, "png", out);
 			out.flush();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			throw new RuntimeException(e);
 		}
 		return Hex.toHexString(out.toByteArray());

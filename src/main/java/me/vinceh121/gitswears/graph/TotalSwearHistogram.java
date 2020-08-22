@@ -9,7 +9,7 @@ import me.vinceh121.gitswears.SwearCounter;
 import me.vinceh121.gitswears.WordCount;
 
 public class TotalSwearHistogram extends GraphGenerator {
-	public TotalSwearHistogram(SwearCounter counter) {
+	public TotalSwearHistogram(final SwearCounter counter) {
 		super(counter);
 	}
 
@@ -23,8 +23,8 @@ public class TotalSwearHistogram extends GraphGenerator {
 				dataset.setValue(count.getEffectiveCount(), count.getWord(), "");
 			}
 		}
-		final JFreeChart chart
-				= ChartFactory.createBarChart(title, "Swears", "Total count (in code and commit messages)", dataset);
+		final JFreeChart chart = ChartFactory.createBarChart(this.title, "Swears",
+				"Total count (in code and commit messages)", dataset);
 		chart.getCategoryPlot().getRangeAxis().setMinorTickMarksVisible(false);
 		return chart;
 	}

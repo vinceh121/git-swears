@@ -56,13 +56,13 @@ public class SwearCounter {
 		this.swears = swears;
 		this.reader = repo.newObjectReader();
 		this.source = ContentSource.create(this.reader);
-		this.sourcePair = new ContentSource.Pair(source, source);
+		this.sourcePair = new ContentSource.Pair(this.source, this.source);
 	}
 
 	public void count() throws MissingObjectException, IncorrectObjectTypeException, CorruptObjectException,
 			IOException, BinaryBlobException, GitAPIException {
-		final RevWalk revWalk = new RevWalk(repo);
-		revWalk.markStart(repo.parseCommit(repo.findRef(mainRef).getObjectId()));
+		final RevWalk revWalk = new RevWalk(this.repo);
+		revWalk.markStart(this.repo.parseCommit(this.repo.findRef(this.mainRef).getObjectId()));
 		for (final RevCommit c : revWalk) {
 			this.countMessage(c);
 
@@ -74,9 +74,9 @@ public class SwearCounter {
 			final ObjectId head = c.getTree();
 
 			final CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
-			oldTreeIter.reset(reader, oldHead);
+			oldTreeIter.reset(this.reader, oldHead);
 			final CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
-			newTreeIter.reset(reader, head);
+			newTreeIter.reset(this.reader, head);
 
 			for (final DiffEntry e : this.git.diff().setNewTree(newTreeIter).setOldTree(oldTreeIter).call()) {
 				this.countDiff(e, AbbreviatedObjectId.fromObjectId(c.getId()));
@@ -90,10 +90,11 @@ public class SwearCounter {
 		final Matcher matcher = WORD_PATTERN.matcher(commit.getFullMessage());
 		while (matcher.find()) {
 			final String word = matcher.group().toLowerCase().trim();
-			if (swears.contains(word))
+			if (this.swears.contains(word)) {
 				this.getOrNewCommitCount(AbbreviatedObjectId.fromObjectId(commit.getId()))
 						.getOrNew(word)
 						.increaseMessage();
+			}
 
 		}
 	}
@@ -108,20 +109,24 @@ public class SwearCounter {
 			final Matcher newMatcher = WORD_PATTERN.matcher(newTxt);
 			while (newMatcher.find()) {
 				final String word = newMatcher.group().toLowerCase().trim();
-				if (swears.contains(word))
+				if (this.swears.contains(word)) {
 					this.getOrNewCommitCount(oid).getOrNew(word).increaseAdded();
+				}
 			}
-			if (e.getChangeType() == ChangeType.ADD)
+			if (e.getChangeType() == ChangeType.ADD) {
 				break;
+			}
 		case DELETE:
 			final Matcher oldMatcher = WORD_PATTERN.matcher(oldTxt);
 			while (oldMatcher.find()) {
 				final String word = oldMatcher.group().toLowerCase().trim();
-				if (swears.contains(word))
+				if (this.swears.contains(word)) {
 					this.getOrNewCommitCount(oid).getOrNew(word).increaseRemoved();
+				}
 			}
-			if (e.getChangeType() == ChangeType.DELETE)
+			if (e.getChangeType() == ChangeType.DELETE) {
 				break;
+			}
 		default:
 			break;
 		}
@@ -142,15 +147,17 @@ public class SwearCounter {
 	/**
 	 * From org.eclipse.jgit.diff.DiffFormatter under EDL license
 	 */
-	private RawText open(DiffEntry.Side side, DiffEntry entry) throws IOException, BinaryBlobException {
-		if (entry.getMode(side) == FileMode.MISSING)
+	private RawText open(final DiffEntry.Side side, final DiffEntry entry) throws IOException, BinaryBlobException {
+		if (entry.getMode(side) == FileMode.MISSING) {
 			return RawText.EMPTY_TEXT;
+		}
 
-		if (entry.getMode(side).getObjectType() != Constants.OBJ_BLOB)
+		if (entry.getMode(side).getObjectType() != Constants.OBJ_BLOB) {
 			return RawText.EMPTY_TEXT;
+		}
 
 		final ObjectLoader ldr = LfsFactory.getInstance()
-				.applySmudgeFilter(repo, sourcePair.open(side, entry), entry.getDiffAttribute());
+				.applySmudgeFilter(this.repo, this.sourcePair.open(side, entry), entry.getDiffAttribute());
 		try {
 			return RawText.load(ldr, PackConfig.DEFAULT_BIG_FILE_THRESHOLD);
 		} catch (final BinaryBlobException e) { // if file is binary, ignore it
@@ -168,12 +175,12 @@ public class SwearCounter {
 				final WordCount wCount = count.get(word);
 
 				final WordCount finCount;
-				if (fynal.containsKey(word)) {
-					finCount = fynal.get(word);
+				if (this.fynal.containsKey(word)) {
+					finCount = this.fynal.get(word);
 				} else {
 					finCount = new WordCount();
 					finCount.setWord(word);
-					fynal.put(word, finCount);
+					this.fynal.put(word, finCount);
 				}
 
 				finCount.setAdded(finCount.getAdded() + wCount.getAdded());
@@ -184,46 +191,46 @@ public class SwearCounter {
 				this.calcEffective(finCount);
 			}
 		}
-		return fynal;
+		return this.fynal;
 	}
 
 	private void calcEffective(final WordCount count) {
 		if (this.includeMessages) {
-			count.setEffectiveCount((count.getAdded() - count.getRemoved()) + count.getMessage());
+			count.setEffectiveCount(count.getAdded() - count.getRemoved() + count.getMessage());
 		} else {
 			count.setEffectiveCount(count.getAdded() - count.getRemoved());
 		}
 	}
 
 	public Map<AbbreviatedObjectId, CommitCount> getMap() {
-		return map;
+		return this.map;
 	}
 
 	public Map<String, WordCount> getFinalCount() {
-		return fynal;
+		return this.fynal;
 	}
 
 	public Repository getRepo() {
-		return repo;
+		return this.repo;
 	}
 
 	public Git getGit() {
-		return git;
+		return this.git;
 	}
 
 	public String getMainRef() {
-		return mainRef;
+		return this.mainRef;
 	}
 
-	public void setMainRef(String mainRef) {
+	public void setMainRef(final String mainRef) {
 		this.mainRef = mainRef;
 	}
 
 	public boolean isIncludeMessages() {
-		return includeMessages;
+		return this.includeMessages;
 	}
 
-	public void setIncludeMessages(boolean includeMessages) {
+	public void setIncludeMessages(final boolean includeMessages) {
 		this.includeMessages = includeMessages;
 	}
 }

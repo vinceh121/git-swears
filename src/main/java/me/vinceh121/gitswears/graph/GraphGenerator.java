@@ -19,35 +19,35 @@ public abstract class GraphGenerator {
 
 	public BufferedImage generateImage() {
 		final JFreeChart chart = this.generateChart();
-		final BufferedImage img = chart.createBufferedImage(width, height);
+		final BufferedImage img = chart.createBufferedImage(this.width, this.height);
 		return img;
 	}
 
 	public int getWidth() {
-		return width;
+		return this.width;
 	}
 
-	public void setWidth(int width) {
+	public void setWidth(final int width) {
 		this.width = width;
 	}
 
 	public int getHeight() {
-		return height;
+		return this.height;
 	}
 
-	public void setHeight(int height) {
+	public void setHeight(final int height) {
 		this.height = height;
 	}
 
 	public String getTitle() {
-		return title;
+		return this.title;
 	}
 
-	public void setTitle(String title) {
+	public void setTitle(final String title) {
 		this.title = title;
 	}
 
 	public SwearCounter getCounter() {
-		return counter;
+		return this.counter;
 	}
 }

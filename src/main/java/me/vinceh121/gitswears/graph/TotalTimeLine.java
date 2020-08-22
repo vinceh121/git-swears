@@ -31,7 +31,7 @@ public class TotalTimeLine extends GraphGenerator {
 	private TimeZone timeZone = TimeZone.getDefault();
 	private long total;
 
-	public TotalTimeLine(SwearCounter counter) {
+	public TotalTimeLine(final SwearCounter counter) {
 		super(counter);
 	}
 
@@ -49,21 +49,21 @@ public class TotalTimeLine extends GraphGenerator {
 			try {
 				revWalk.parseHeaders(com);
 				revWalk.parseBody(com);
-			} catch (IOException e) {
+			} catch (final IOException e) {
 				e.printStackTrace();
 			}
-			final Date date = new Date(((long) com.getCommitTime()) * 1000L);
+			final Date date = new Date(com.getCommitTime() * 1000L);
 			this.total += this.totalEffective(c);
-			serie.addOrUpdate(new Second(date), total);
+			serie.addOrUpdate(new Second(date), this.total);
 		}
 		revWalk.close();
 
 		final TimeSeriesCollection dataset = new TimeSeriesCollection(serie);
 
-		final JFreeChart chart = ChartFactory.createTimeSeriesChart(title, "Date (" + timeZone.getDisplayName() + ")",
-				"Cumulative swear count per commit", dataset);
+		final JFreeChart chart = ChartFactory.createTimeSeriesChart(this.title,
+				"Date (" + this.timeZone.getDisplayName() + ")", "Cumulative swear count per commit", dataset);
 
-		XYPlot plot = (XYPlot) chart.getPlot();
+		final XYPlot plot = (XYPlot) chart.getPlot();
 		plot.setBackgroundPaint(Color.LIGHT_GRAY);
 		plot.setDomainGridlinePaint(Color.WHITE);
 		plot.setRangeGridlinePaint(Color.WHITE);
@@ -71,16 +71,16 @@ public class TotalTimeLine extends GraphGenerator {
 		plot.setDomainCrosshairVisible(true);
 		plot.setRangeCrosshairVisible(true);
 
-		XYItemRenderer r = plot.getRenderer();
+		final XYItemRenderer r = plot.getRenderer();
 		if (r instanceof XYLineAndShapeRenderer) {
-			XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) r;
+			final XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) r;
 			renderer.setDefaultShapesVisible(true);
 			renderer.setDefaultShapesFilled(true);
 			renderer.setDrawSeriesLineAsPath(true);
 			renderer.setSeriesShape(0, new Line2D.Double(0, -5, 0, 5));
 		}
 
-		DateAxis axis = (DateAxis) plot.getDomainAxis();
+		final DateAxis axis = (DateAxis) plot.getDomainAxis();
 		axis.setDateFormatOverride(new SimpleDateFormat("dd-MM-yyyy"));
 
 		return chart;
@@ -92,19 +92,20 @@ public class TotalTimeLine extends GraphGenerator {
 	private long totalEffective(final CommitCount c) {
 		long value = 0;
 		for (final WordCount w : c.values()) {
-			if (this.getCounter().isIncludeMessages())
+			if (this.getCounter().isIncludeMessages()) {
 				value += w.getAdded() + w.getMessage();
-			else
+			} else {
 				value += w.getAdded();
+			}
 		}
 		return value;
 	}
 
 	public TimeZone getTimeZone() {
-		return timeZone;
+		return this.timeZone;
 	}
 
-	public void setTimeZone(TimeZone timeZone) {
+	public void setTimeZone(final TimeZone timeZone) {
 		this.timeZone = timeZone;
 	}
 }

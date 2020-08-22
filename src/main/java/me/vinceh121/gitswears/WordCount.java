@@ -7,18 +7,18 @@ public class WordCount {
 	private long removed, added, message, effective;
 
 	public String getWord() {
-		return word;
+		return this.word;
 	}
 
-	public void setWord(String word) {
+	public void setWord(final String word) {
 		this.word = word;
 	}
 
 	public long getRemoved() {
-		return removed;
+		return this.removed;
 	}
 
-	public void setRemoved(long removed) {
+	public void setRemoved(final long removed) {
 		this.removed = removed;
 	}
 
@@ -27,10 +27,10 @@ public class WordCount {
 	}
 
 	public long getAdded() {
-		return added;
+		return this.added;
 	}
 
-	public void setAdded(long added) {
+	public void setAdded(final long added) {
 		this.added = added;
 	}
 
@@ -39,10 +39,10 @@ public class WordCount {
 	}
 
 	public long getMessage() {
-		return message;
+		return this.message;
 	}
 
-	public void setMessage(long message) {
+	public void setMessage(final long message) {
 		this.message = message;
 	}
 
@@ -54,13 +54,21 @@ public class WordCount {
 	public long getEffectiveCount() {
 		return this.effective;
 	}
-	
+
 	public void setEffectiveCount(final long effective) {
 		this.effective = effective;
 	}
 
 	@Override
 	public String toString() {
-		return "WordCount [word=" + word + ", removed=" + removed + ", added=" + added + ", message=" + message + "]";
+		return "WordCount [word="
+				+ this.word
+				+ ", removed="
+				+ this.removed
+				+ ", added="
+				+ this.added
+				+ ", message="
+				+ this.message
+				+ "]";
 	}
 }

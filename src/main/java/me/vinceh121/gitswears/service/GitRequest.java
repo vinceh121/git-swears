@@ -72,7 +72,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 		}
 
 		final String branch = ctx.request().getParam("branch") != null ? ctx.request().getParam("branch") : "master";
-		final boolean includeMessages = !("n".equalsIgnoreCase(ctx.request().getParam("messages")));
+		final boolean includeMessages = !"n".equalsIgnoreCase(ctx.request().getParam("messages"));
 
 		final String jobName = String.join(".", this.requestName, repoId, branch, String.valueOf(includeMessages));
 
@@ -195,7 +195,8 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 		});
 	}
 
-	private void sendCached0(final RoutingContext ctx, final Response redisRes, Handler<AsyncResult<Void>> handler) {
+	private void sendCached0(final RoutingContext ctx, final Response redisRes,
+			final Handler<AsyncResult<Void>> handler) {
 		this.worker.executeBlocking(promise -> {
 			this.sendCached(ctx, redisRes);
 			promise.complete();
@@ -204,7 +205,8 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 
 	protected abstract void sendCached(final RoutingContext ctx, final Response redisRes);
 
-	private void sendResult0(final RoutingContext ctx, final SwearCounter counter, Handler<AsyncResult<T>> handler) {
+	private void sendResult0(final RoutingContext ctx, final SwearCounter counter,
+			final Handler<AsyncResult<T>> handler) {
 		this.worker.executeBlocking(promise -> {
 			promise.complete(this.sendResult(ctx, counter));
 		}, handler);

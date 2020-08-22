@@ -33,7 +33,7 @@ public class SwearService {
 	private final Path rootDir;
 	private final RedisAPI redisApi;
 
-	public static void main(String[] args) {
+	public static void main(final String[] args) {
 		final SwearService service = new SwearService();
 		service.start();
 	}
@@ -43,22 +43,22 @@ public class SwearService {
 		this.rootDir.toFile().mkdirs();
 
 		try {
-			config.load(new FileInputStream("/etc/gitswears/config.properties"));
+			this.config.load(new FileInputStream("/etc/gitswears/config.properties"));
 
 			final BufferedReader br = new BufferedReader(new FileReader("/etc/gitswears/swears.txt"));
 			String line;
 			while ((line = br.readLine()) != null) {
-				swearList.add(line.trim());
+				this.swearList.add(line.trim());
 			}
 			br.close();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			throw new RuntimeException(e);
 		}
 
 		this.vertx = Vertx.vertx();
 		this.vertx.exceptionHandler(t -> LOG.error("Unexpected Vert.x exception", t));
 
-		final Redis redis = Redis.createClient(vertx, config.getProperty("redis.constring"));
+		final Redis redis = Redis.createClient(this.vertx, this.config.getProperty("redis.constring"));
 		redis.connect(redisRes -> {
 			if (redisRes.failed()) {
 				LOG.error("Failed to connect to redis", redisRes.cause());
@@ -66,11 +66,11 @@ public class SwearService {
 		});
 		this.redisApi = RedisAPI.api(redis);
 
-		this.server = vertx.createHttpServer();
-		this.router = Router.router(vertx);
+		this.server = this.vertx.createHttpServer();
+		this.router = Router.router(this.vertx);
 		this.router.errorHandler(500,
 				ctx -> LOG.error("Unexpected exception in route " + ctx.normalisedPath(), ctx.failure()));
-		this.server.requestHandler(router);
+		this.server.requestHandler(this.router);
 
 		this.router.get("/count.json").handler(new JsonRequest(this));
 		this.router.get("/count.png").handler(new GraphRequest(this));
@@ -83,26 +83,26 @@ public class SwearService {
 	}
 
 	public RedisAPI getRedisApi() {
-		return redisApi;
+		return this.redisApi;
 	}
 
 	public Path getRootDir() {
-		return rootDir;
+		return this.rootDir;
 	}
 
 	public Vertx getVertx() {
-		return vertx;
+		return this.vertx;
 	}
 
 	public Properties getConfig() {
-		return config;
+		return this.config;
 	}
 
 	public Collection<String> getAllowedHosts() {
-		return allowedHosts;
+		return this.allowedHosts;
 	}
 
 	public Collection<String> getSwearList() {
-		return swearList;
+		return this.swearList;
 	}
 }

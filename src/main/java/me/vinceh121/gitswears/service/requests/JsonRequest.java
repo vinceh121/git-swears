@@ -10,12 +10,12 @@ import me.vinceh121.gitswears.service.SwearService;
 
 public class JsonRequest extends GitRequest<JsonObject> {
 
-	public JsonRequest(SwearService swearService) {
+	public JsonRequest(final SwearService swearService) {
 		super(swearService, "json");
 	}
 
 	@Override
-	protected void sendCached(final RoutingContext ctx, Response redisRes) {
+	protected void sendCached(final RoutingContext ctx, final Response redisRes) {
 		this.response(ctx, 200, new JsonObject(redisRes.toBuffer()));
 	}
 

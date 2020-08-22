@@ -9,7 +9,7 @@ public class CommitCount extends Hashtable<String, WordCount> {
 	private AbbreviatedObjectId commitId;
 
 	public AbbreviatedObjectId getCommitId() {
-		return commitId;
+		return this.commitId;
 	}
 
 	public void setCommitId(final AbbreviatedObjectId commitId) {
