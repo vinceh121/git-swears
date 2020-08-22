@@ -6,6 +6,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -85,14 +86,14 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 		}
 
 		final List<String> jobElements
-				= Arrays.asList(this.requestName, repoId, branch, String.valueOf(includeMessages));
+				= new ArrayList<>(Arrays.asList(this.requestName, repoId, branch, String.valueOf(includeMessages)));
 		jobElements.addAll(this.getExtraJobKey(ctx));
 
 		final String jobName = String.join(".", jobElements);
 
 		this.fetchCached(jobName).onComplete(cacheRes -> {
 			if (cacheRes.succeeded()) {
-				LOG.info("[{}] cached response for repo {} branch {}", clientId, repoId, branch);
+				LOG.info("[{}] cached response for job {}", clientId, jobName);
 				if (!cacheRes.result().toString().equals(PROGRESS_VALUE)) {
 					this.sendCached0(ctx, cacheRes.result(), null);
 				} else {
@@ -109,7 +110,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 					LOG.error("[" + clientId + "] clone failed", cloneRes.cause());
 					return;
 				}
-				LOG.info("[{}] clone success for repo {} branch {}", clientId, uri, branch);
+				LOG.info("[{}] clone success for job {}", clientId, jobName);
 
 				this.countSwears(cloneRes.result().getRepository(), branch, includeMessages, countRes -> {
 					if (countRes.failed()) {
@@ -119,7 +120,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 					}
 
 					final SwearCounter count = countRes.result();
-					LOG.info("[{}] count success for repo {}", clientId, uri);
+					LOG.info("[{}] count success for job {}", clientId, jobName);
 
 					this.sendResult0(ctx, count, sendRes -> {
 						if (sendRes.failed()) {
