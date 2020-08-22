@@ -1,9 +1,13 @@
 package me.vinceh121.gitswears.graph;
 
 import java.awt.Color;
+import java.awt.geom.Line2D;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.TimeZone;
 
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -25,7 +29,7 @@ import me.vinceh121.gitswears.WordCount;
 
 public class TotalTimeLine extends GraphGenerator {
 	private TimeZone timeZone = TimeZone.getDefault();
-	private long total = 0;
+	private long total;
 
 	public TotalTimeLine(SwearCounter counter) {
 		super(counter);
@@ -37,7 +41,10 @@ public class TotalTimeLine extends GraphGenerator {
 
 		final TimeSeries serie = new TimeSeries("Total swear count");
 
-		for (final CommitCount c : this.getCounter().getMap().values()) {
+		final List<CommitCount> values = new ArrayList<>(this.getCounter().getMap().values());
+		Collections.reverse(values);
+
+		for (final CommitCount c : values) {
 			final RevCommit com = revWalk.lookupCommit(c.getCommitId().toObjectId());
 			try {
 				revWalk.parseHeaders(com);
@@ -54,7 +61,7 @@ public class TotalTimeLine extends GraphGenerator {
 		final TimeSeriesCollection dataset = new TimeSeriesCollection(serie);
 
 		final JFreeChart chart = ChartFactory.createTimeSeriesChart(title, "Date (" + timeZone.getDisplayName() + ")",
-				"Total cumulative swear count", dataset);
+				"Cumulative swear count per commit", dataset);
 
 		XYPlot plot = (XYPlot) chart.getPlot();
 		plot.setBackgroundPaint(Color.LIGHT_GRAY);
@@ -70,10 +77,11 @@ public class TotalTimeLine extends GraphGenerator {
 			renderer.setDefaultShapesVisible(true);
 			renderer.setDefaultShapesFilled(true);
 			renderer.setDrawSeriesLineAsPath(true);
+			renderer.setSeriesShape(0, new Line2D.Double(0, -5, 0, 5));
 		}
 
 		DateAxis axis = (DateAxis) plot.getDomainAxis();
-		axis.setDateFormatOverride(new SimpleDateFormat("MMM-yyyy"));
+		axis.setDateFormatOverride(new SimpleDateFormat("dd-MM-yyyy"));
 
 		return chart;
 	}
@@ -84,7 +92,10 @@ public class TotalTimeLine extends GraphGenerator {
 	private long totalEffective(final CommitCount c) {
 		long value = 0;
 		for (final WordCount w : c.values()) {
-			value += w.getEffectiveCount();
+			if (this.getCounter().isIncludeMessages())
+				value += w.getAdded() + w.getMessage();
+			else
+				value += w.getAdded();
 		}
 		return value;
 	}
