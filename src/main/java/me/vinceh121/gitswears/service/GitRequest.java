@@ -71,10 +71,10 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 			throw new RuntimeException(e1);
 		}
 
-		final boolean includeMessages = "n".equalsIgnoreCase(ctx.request().getParam("messages"));
-
 		final String branch = ctx.request().getParam("branch") != null ? ctx.request().getParam("branch") : "master";
-		final String jobName = String.join(".", this.requestName, repoId, branch);
+		final boolean includeMessages = !("n".equalsIgnoreCase(ctx.request().getParam("messages")));
+
+		final String jobName = String.join(".", this.requestName, repoId, branch, String.valueOf(includeMessages));
 
 		this.fetchCached(jobName).onComplete(cacheRes -> {
 			if (cacheRes.succeeded()) {

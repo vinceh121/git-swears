@@ -1,9 +1,12 @@
 package me.vinceh121.gitswears;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -156,7 +159,10 @@ public class SwearCounter {
 	}
 
 	private Map<String, WordCount> countFinal() {
-		for (final AbbreviatedObjectId oid : this.map.keySet()) {
+		final List<AbbreviatedObjectId> ids = new ArrayList<>(this.map.keySet());
+		Collections.reverse(ids);
+
+		for (final AbbreviatedObjectId oid : ids) {
 			final CommitCount count = this.map.get(oid);
 			for (final String word : count.keySet()) {
 				final WordCount wCount = count.get(word);
