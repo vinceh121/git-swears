@@ -16,7 +16,7 @@ public class TotalSwearHistogram extends GraphGenerator {
 	@Override
 	public JFreeChart generateChart() {
 		final DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-		for (final WordCount count : this.getCounter().countFinal().values()) {
+		for (final WordCount count : this.getCounter().getFinalCount().values()) {
 			try {
 				dataset.incrementValue(count.getEffectiveCount(), count.getWord(), "");
 			} catch (final UnknownKeyException e) {
@@ -25,6 +25,7 @@ public class TotalSwearHistogram extends GraphGenerator {
 		}
 		final JFreeChart chart
 				= ChartFactory.createBarChart(title, "Swears", "Total count (in code and commit messages)", dataset);
+		chart.getCategoryPlot().getRangeAxis().setMinorTickMarksVisible(false);
 		return chart;
 	}
 }

@@ -59,7 +59,11 @@ public class SwearService {
 		this.vertx.exceptionHandler(t -> LOG.error("Unexpected Vert.x exception", t));
 
 		final Redis redis = Redis.createClient(vertx, config.getProperty("redis.constring"));
-		redis.connect(redisRes -> {});
+		redis.connect(redisRes -> {
+			if (redisRes.failed()) {
+				LOG.error("Failed to connect to redis", redisRes.cause());
+			}
+		});
 		this.redisApi = RedisAPI.api(redis);
 
 		this.server = vertx.createHttpServer();

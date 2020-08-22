@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class WordCount {
 	private String word;
-	private long removed, added, message;
+	private long removed, added, message, effective;
 
 	public String getWord() {
 		return word;
@@ -52,7 +52,11 @@ public class WordCount {
 
 	@JsonIgnore
 	public long getEffectiveCount() {
-		return (added - removed) + message;
+		return this.effective;
+	}
+	
+	public void setEffectiveCount(final long effective) {
+		this.effective = effective;
 	}
 
 	@Override

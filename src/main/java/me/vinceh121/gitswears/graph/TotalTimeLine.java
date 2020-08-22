@@ -25,6 +25,7 @@ import me.vinceh121.gitswears.WordCount;
 
 public class TotalTimeLine extends GraphGenerator {
 	private TimeZone timeZone = TimeZone.getDefault();
+	private long total = 0;
 
 	public TotalTimeLine(SwearCounter counter) {
 		super(counter);
@@ -45,14 +46,15 @@ public class TotalTimeLine extends GraphGenerator {
 				e.printStackTrace();
 			}
 			final Date date = new Date(((long) com.getCommitTime()) * 1000L);
-			serie.addOrUpdate(new Second(date), this.totalEffective(c));
+			this.total += this.totalEffective(c);
+			serie.addOrUpdate(new Second(date), total);
 		}
 		revWalk.close();
 
 		final TimeSeriesCollection dataset = new TimeSeriesCollection(serie);
 
 		final JFreeChart chart = ChartFactory.createTimeSeriesChart(title, "Date (" + timeZone.getDisplayName() + ")",
-				"Total swear count", dataset);
+				"Total cumulative swear count", dataset);
 
 		XYPlot plot = (XYPlot) chart.getPlot();
 		plot.setBackgroundPaint(Color.LIGHT_GRAY);
@@ -76,6 +78,9 @@ public class TotalTimeLine extends GraphGenerator {
 		return chart;
 	}
 
+	/**
+	 * @return Total for all words in this commit
+	 */
 	private long totalEffective(final CommitCount c) {
 		long value = 0;
 		for (final WordCount w : c.values()) {

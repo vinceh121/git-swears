@@ -1,12 +1,9 @@
 package me.vinceh121.gitswears;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,14 +33,18 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.util.LfsFactory;
 
 public class SwearCounter {
+	// private static final Logger LOG =
+	// LoggerFactory.getLogger(SwearCounter.class);
 	private static final Pattern WORD_PATTERN = Pattern.compile("\\W*\\w+\\W*", Pattern.CASE_INSENSITIVE);
 	private final Map<AbbreviatedObjectId, CommitCount> map = new LinkedHashMap<>();
+	private final Map<String, WordCount> fynal = new Hashtable<>();
 	private final Collection<String> swears;
 	private final Git git;
 	private final Repository repo;
 	private final ObjectReader reader;
 	private final ContentSource source;
 	private final ContentSource.Pair sourcePair;
+	private boolean includeMessages = true;
 	private String mainRef = "master";
 
 	public SwearCounter(final Repository repo, final Collection<String> swears) {
@@ -79,6 +80,7 @@ public class SwearCounter {
 			}
 		}
 		revWalk.close();
+		this.countFinal();
 	}
 
 	private void countMessage(final RevCommit commit) {
@@ -148,40 +150,51 @@ public class SwearCounter {
 				.applySmudgeFilter(repo, sourcePair.open(side, entry), entry.getDiffAttribute());
 		try {
 			return RawText.load(ldr, PackConfig.DEFAULT_BIG_FILE_THRESHOLD);
-		} catch (final BinaryBlobException e) {
+		} catch (final BinaryBlobException e) { // if file is binary, ignore it
 			return RawText.EMPTY_TEXT;
 		}
 	}
 
-	public Map<String, WordCount> countFinal() {
-		final Map<String, WordCount> fin = new Hashtable<>();
-		final List<AbbreviatedObjectId> ids = new ArrayList<>(this.map.keySet());
-		Collections.reverse(ids);
-
-		for (final AbbreviatedObjectId oid : ids) {
+	private Map<String, WordCount> countFinal() {
+		for (final AbbreviatedObjectId oid : this.map.keySet()) {
 			final CommitCount count = this.map.get(oid);
 			for (final String word : count.keySet()) {
 				final WordCount wCount = count.get(word);
 
 				final WordCount finCount;
-				if (fin.containsKey(word)) {
-					finCount = fin.get(word);
+				if (fynal.containsKey(word)) {
+					finCount = fynal.get(word);
 				} else {
 					finCount = new WordCount();
 					finCount.setWord(word);
-					fin.put(word, finCount);
+					fynal.put(word, finCount);
 				}
 
 				finCount.setAdded(finCount.getAdded() + wCount.getAdded());
 				finCount.setMessage(finCount.getMessage() + wCount.getMessage());
 				finCount.setRemoved(finCount.getRemoved() + wCount.getRemoved());
+
+				this.calcEffective(wCount); // TODO put there where it's more optimized
+				this.calcEffective(finCount);
 			}
 		}
-		return fin;
+		return fynal;
+	}
+
+	private void calcEffective(final WordCount count) {
+		if (this.includeMessages) {
+			count.setEffectiveCount((count.getAdded() - count.getRemoved()) + count.getMessage());
+		} else {
+			count.setEffectiveCount(count.getAdded() - count.getRemoved());
+		}
 	}
 
 	public Map<AbbreviatedObjectId, CommitCount> getMap() {
 		return map;
+	}
+
+	public Map<String, WordCount> getFinalCount() {
+		return fynal;
 	}
 
 	public Repository getRepo() {
@@ -200,4 +213,11 @@ public class SwearCounter {
 		this.mainRef = mainRef;
 	}
 
+	public boolean isIncludeMessages() {
+		return includeMessages;
+	}
+
+	public void setIncludeMessages(boolean includeMessages) {
+		this.includeMessages = includeMessages;
+	}
 }

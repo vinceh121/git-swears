@@ -71,6 +71,8 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 			throw new RuntimeException(e1);
 		}
 
+		final boolean includeMessages = "n".equalsIgnoreCase(ctx.request().getParam("messages"));
+
 		final String branch = ctx.request().getParam("branch") != null ? ctx.request().getParam("branch") : "master";
 		final String jobName = String.join(".", this.requestName, repoId, branch);
 
@@ -95,7 +97,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 				}
 				LOG.info("[{}] clone success for repo {} branch {}", clientId, uri, branch);
 
-				this.countSwears(cloneRes.result().getRepository(), branch, countRes -> {
+				this.countSwears(cloneRes.result().getRepository(), branch, includeMessages, countRes -> {
 					if (countRes.failed()) {
 						this.error(ctx, 500, "Git error while counting", countRes.cause());
 						this.deleteRepo(cloneRes.result().getRepository());
@@ -150,11 +152,12 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 		}, handler);
 	}
 
-	private void countSwears(final Repository repo, final String branch,
+	private void countSwears(final Repository repo, final String branch, final boolean includeMessages,
 			final Handler<AsyncResult<SwearCounter>> handler) {
 		this.worker.executeBlocking(promise -> {
 			final SwearCounter swearCounter = new SwearCounter(repo, this.swearService.getSwearList());
 			swearCounter.setMainRef(branch);
+			swearCounter.setIncludeMessages(includeMessages);
 			try {
 				swearCounter.count();
 			} catch (IOException | BinaryBlobException | GitAPIException e) {
