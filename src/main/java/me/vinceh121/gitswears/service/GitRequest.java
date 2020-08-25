@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jgit.api.CloneCommand;
@@ -16,7 +17,9 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.BinaryBlobException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +34,7 @@ import me.vinceh121.gitswears.SwearCounter;
 
 public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	public static final String PROGRESS_VALUE = new JsonObject().put("message", "Counting is in progress").encode();
+	public static final long COMMIT_LIMIT = 1024;
 	private static final Logger LOG = LoggerFactory.getLogger(GitRequest.class);
 	private final SwearService swearService;
 	private final WorkerExecutor worker;
@@ -107,37 +111,65 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 			this.cloneRepo(uri, branch, repoId, cloneRes -> {
 				if (cloneRes.failed()) {
 					this.error(ctx, 503, "Clone failed: " + cloneRes.cause());
-					LOG.error("[" + clientId + "] clone failed", cloneRes.cause());
 					return;
 				}
 				LOG.info("[{}] clone success for job {}", clientId, jobName);
-
-				this.countSwears(cloneRes.result().getRepository(), branch, includeMessages, countRes -> {
-					if (countRes.failed()) {
-						this.error(ctx, 500, "Git error while counting", countRes.cause());
-						this.deleteRepo(cloneRes.result().getRepository());
+				this.checkSize(cloneRes.result(), checkRes -> {
+					if (checkRes.failed()) {
+						this.error(ctx, 500, "Failed to pre-count commits");
+						return;
+					}
+					if (!checkRes.result().booleanValue()) {
+						this.error(ctx, 400, "Repository exceeds limit of " + COMMIT_LIMIT + " commits");
 						return;
 					}
 
-					final SwearCounter count = countRes.result();
-					LOG.info("[{}] count success for job {}", clientId, jobName);
-
-					this.sendResult0(ctx, count, sendRes -> {
-						if (sendRes.failed()) {
-							this.error(ctx, 400, "Error while sending result", sendRes.cause());
+					this.countSwears(cloneRes.result().getRepository(), branch, includeMessages, countRes -> {
+						if (countRes.failed()) {
+							this.error(ctx, 500, "Git error while counting", countRes.cause());
 							this.deleteRepo(cloneRes.result().getRepository());
 							return;
 						}
 
-						this.swearService.getRedisApi()
-								.setex(jobName, this.swearService.getConfig().getProperty("redis.cachetime"),
-										this.putInCache(sendRes.result()), redisRes -> {});
+						final SwearCounter count = countRes.result();
+						LOG.info("[{}] count success for job {}", clientId, jobName);
 
-						this.deleteRepo(cloneRes.result().getRepository());
+						this.sendResult0(ctx, count, sendRes -> {
+							if (sendRes.failed()) {
+								this.error(ctx, 400, "Error while sending result", sendRes.cause());
+								this.deleteRepo(cloneRes.result().getRepository());
+								return;
+							}
+
+							this.swearService.getRedisApi()
+									.setex(jobName, this.swearService.getConfig().getProperty("redis.cachetime"),
+											this.putInCache(sendRes.result()), redisRes -> {});
+
+							this.deleteRepo(cloneRes.result().getRepository());
+						});
 					});
 				});
 			});
 		});
+	}
+
+	/**
+	 * true when limit exceeded
+	 */
+	private void checkSize(final Git git, final Handler<AsyncResult<Boolean>> handler) {
+		this.worker.executeBlocking(promise -> {
+			try {
+				long count = 0;
+				final Iterator<RevCommit> it = git.log().all().call().iterator();
+				while (it.hasNext()) {
+					count++;
+					it.next();
+				}
+				promise.complete(count > COMMIT_LIMIT);
+			} catch (GitAPIException | IOException e) {
+				promise.fail(e);
+			}
+		}, handler);
 	}
 
 	private void cloneRepo(final String uri, final String branch, final String repoId,
@@ -158,7 +190,35 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 					.setCloneAllBranches(false)
 					/* .setBranchesToClone(Collections.singleton(branch)) */
 					.setBranch(branch)
-					.setTimeout(30);
+					.setTimeout(30)
+					.setProgressMonitor(new ProgressMonitor() {
+
+						@Override
+						public void update(int completed) {
+							for (int i = 0; i < completed; i++)
+								System.out.print(".");
+						}
+
+						@Override
+						public void start(int totalTasks) {
+							System.out.println("start: " + totalTasks);
+						}
+
+						@Override
+						public boolean isCancelled() {
+							return false;
+						}
+
+						@Override
+						public void endTask() {
+							System.out.println("end task");
+						}
+
+						@Override
+						public void beginTask(String title, int totalWork) {
+							System.out.println("start task: " + title + "\t" + totalWork);
+						}
+					});
 			try {
 				promise.complete(cmd.call());
 			} catch (final GitAPIException e) {
