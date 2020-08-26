@@ -33,7 +33,7 @@ import me.vinceh121.gitswears.SwearCounter;
 
 public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	public static final String PROGRESS_VALUE = new JsonObject().put("message", "Counting is in progress").encode();
-	public static final long COMMIT_LIMIT = 1024;
+	public static final long COMMIT_LIMIT = 2048;
 	private static final Logger LOG = LoggerFactory.getLogger(GitRequest.class);
 	private final SwearService swearService;
 	private final WorkerExecutor worker;
