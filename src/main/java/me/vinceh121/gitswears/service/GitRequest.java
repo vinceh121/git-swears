@@ -17,7 +17,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.BinaryBlobException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.slf4j.Logger;
@@ -117,10 +116,12 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 				this.checkSize(cloneRes.result(), checkRes -> {
 					if (checkRes.failed()) {
 						this.error(ctx, 500, "Failed to pre-count commits");
+						this.deleteRepo(cloneRes.result().getRepository());
 						return;
 					}
-					if (!checkRes.result().booleanValue()) {
+					if (checkRes.result()) {
 						this.error(ctx, 400, "Repository exceeds limit of " + COMMIT_LIMIT + " commits");
+						this.deleteRepo(cloneRes.result().getRepository());
 						return;
 					}
 
@@ -190,35 +191,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 					.setCloneAllBranches(false)
 					/* .setBranchesToClone(Collections.singleton(branch)) */
 					.setBranch(branch)
-					.setTimeout(30)
-					.setProgressMonitor(new ProgressMonitor() {
-
-						@Override
-						public void update(int completed) {
-							for (int i = 0; i < completed; i++)
-								System.out.print(".");
-						}
-
-						@Override
-						public void start(int totalTasks) {
-							System.out.println("start: " + totalTasks);
-						}
-
-						@Override
-						public boolean isCancelled() {
-							return false;
-						}
-
-						@Override
-						public void endTask() {
-							System.out.println("end task");
-						}
-
-						@Override
-						public void beginTask(String title, int totalWork) {
-							System.out.println("start task: " + title + "\t" + totalWork);
-						}
-					});
+					.setTimeout(30);
 			try {
 				promise.complete(cmd.call());
 			} catch (final GitAPIException e) {
