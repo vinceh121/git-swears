@@ -17,6 +17,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.BinaryBlobException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.slf4j.Logger;
@@ -113,7 +114,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 					return;
 				}
 				LOG.info("[{}] clone success for job {}", clientId, jobName);
-				this.checkSize(cloneRes.result(), checkRes -> {
+				this.checkSize(cloneRes.result(), branch, checkRes -> {
 					if (checkRes.failed()) {
 						this.error(ctx, 500, "Failed to pre-count commits");
 						this.deleteRepo(cloneRes.result().getRepository());
@@ -157,17 +158,20 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	/**
 	 * true when limit exceeded
 	 */
-	private void checkSize(final Git git, final Handler<AsyncResult<Boolean>> handler) {
+	private void checkSize(final Git git, final String branch, final Handler<AsyncResult<Boolean>> handler) {
 		this.worker.executeBlocking(promise -> {
 			try {
 				long count = 0;
-				final Iterator<RevCommit> it = git.log().all().call().iterator();
+				final Iterator<RevCommit> it = git.log().addPath("refs/heads/" + branch).call().iterator();
 				while (it.hasNext()) {
 					count++;
 					it.next();
+					if (count > COMMIT_LIMIT) {
+						break;
+					}
 				}
 				promise.complete(count > COMMIT_LIMIT);
-			} catch (GitAPIException | IOException e) {
+			} catch (GitAPIException e) {
 				promise.fail(e);
 			}
 		}, handler);

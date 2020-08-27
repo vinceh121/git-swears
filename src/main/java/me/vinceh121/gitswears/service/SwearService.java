@@ -74,6 +74,16 @@ public class SwearService {
 
 		this.router.get("/count.json").handler(new JsonRequest(this));
 		this.router.get("/count.png").handler(new GraphRequest(this));
+
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			this.vertx.fileSystem().deleteRecursive(this.rootDir.toAbsolutePath().toString(), true, res -> {
+				if (res.failed()) {
+					LOG.error("Failed to delete temporary folder", res.cause());
+				} else {
+					LOG.info("Deleted temporary folder");
+				}
+			});
+		}, "Temporary folder deletion"));
 	}
 
 	public void start() {
