@@ -1,4 +1,7 @@
 # git-swears
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/vinceh121/git-swears/Java%20CI%20with%20Maven)
+![Swear count timeline of this project](https://swear.vinceh121.me/count.png?type=timeline&uri=https://github.com/vinceh121/git-swears)
+
 Counts swear words over time in a git repository. Available as a standalone executable and as a service.
 
 ## How to use the service
