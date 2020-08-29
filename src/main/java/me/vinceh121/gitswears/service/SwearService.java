@@ -14,6 +14,8 @@ import java.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.prometheus.client.exporter.HTTPServer;
+import io.prometheus.client.hotspot.DefaultExports;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
@@ -55,6 +57,8 @@ public class SwearService {
 			throw new RuntimeException(e);
 		}
 
+		this.initMetrics();
+		
 		this.vertx = Vertx.vertx();
 		this.vertx.exceptionHandler(t -> LOG.error("Unexpected Vert.x exception", t));
 
@@ -86,10 +90,26 @@ public class SwearService {
 		}, "Temporary folder deletion"));
 	}
 
-	public void start() {
+	private void start() {
 		this.server.listen(Integer.parseInt(this.config.getProperty("http.port")),
 				this.config.getProperty("http.host"));
 		LOG.info("Started!");
+	}
+
+	private void initMetrics() {
+		if (!this.config.containsKey("metrics.port")) {
+			return;
+		}
+		final int port = Integer.parseInt(this.config.getProperty("metrics.port"));
+
+		LOG.info("Starting metrics");
+
+		DefaultExports.initialize();
+		try {
+			new HTTPServer("127.0.0.1", port, true);
+		} catch (IOException e) {
+			LOG.error("Failed to start metrics HTTP server", e);
+		}
 	}
 
 	public RedisAPI getRedisApi() {

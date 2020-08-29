@@ -10,7 +10,10 @@
 		</encoder>
 	</appender>
 
+	<appender name="METRICS" class="io.prometheus.client.logback.InstrumentedAppender" />
+
 	<root level="ALL">
 		<appender-ref ref="Console" />
+		<appender-ref ref="METRICS" />
 	</root>
 </configuration>

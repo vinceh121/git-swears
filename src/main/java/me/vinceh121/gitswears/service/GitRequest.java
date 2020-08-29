@@ -17,12 +17,13 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.BinaryBlobException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.prometheus.client.Counter;
+import io.prometheus.client.Histogram;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -35,7 +36,14 @@ import me.vinceh121.gitswears.SwearCounter;
 public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	public static final String PROGRESS_VALUE = new JsonObject().put("message", "Counting is in progress").encode();
 	public static final long COMMIT_LIMIT = 2048;
+
 	private static final Logger LOG = LoggerFactory.getLogger(GitRequest.class);
+	private static final Histogram METRICS_CLONE_TIME
+			= Histogram.build("clone_time", "Time taken to clone repos").register();
+	private static final Histogram METRICS_COUNT_TIME
+			= Histogram.build("count_time", "Time taken to count swears in repos").register();
+	private static final Counter METRICS_ERROR = Counter.build("error_count", "Count of all errors").register();
+
 	private final SwearService swearService;
 	private final WorkerExecutor worker;
 	private final String requestName;
@@ -180,43 +188,47 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	private void cloneRepo(final String uri, final String branch, final String repoId,
 			final Handler<AsyncResult<Git>> handler) {
 		this.worker.executeBlocking(promise -> {
-			final File out = Paths.get(this.swearService.getRootDir().toString(), repoId).toFile();
-			if (out.exists()) {
+			METRICS_CLONE_TIME.time(() -> {
+				final File out = Paths.get(this.swearService.getRootDir().toString(), repoId).toFile();
+				if (out.exists()) {
+					try {
+						promise.complete(Git.open(out));
+					} catch (final IOException e) {
+						promise.fail(e);
+					}
+				}
+				final CloneCommand cmd = Git.cloneRepository()
+						.setBare(true)
+						.setURI(uri)
+						.setDirectory(out)
+						.setCloneAllBranches(false)
+						/* .setBranchesToClone(Collections.singleton(branch)) */
+						.setBranch(branch)
+						.setTimeout(30);
 				try {
-					promise.complete(Git.open(out));
-				} catch (final IOException e) {
+					promise.complete(cmd.call());
+				} catch (final GitAPIException e) {
 					promise.fail(e);
 				}
-			}
-			final CloneCommand cmd = Git.cloneRepository()
-					.setBare(true)
-					.setURI(uri)
-					.setDirectory(out)
-					.setCloneAllBranches(false)
-					/* .setBranchesToClone(Collections.singleton(branch)) */
-					.setBranch(branch)
-					.setTimeout(30);
-			try {
-				promise.complete(cmd.call());
-			} catch (final GitAPIException e) {
-				promise.fail(e);
-			}
+			});
 		}, handler);
 	}
 
 	private void countSwears(final Repository repo, final String branch, final boolean includeMessages,
 			final Handler<AsyncResult<SwearCounter>> handler) {
 		this.worker.executeBlocking(promise -> {
-			final SwearCounter swearCounter = new SwearCounter(repo, this.swearService.getSwearList());
-			swearCounter.setMainRef(branch);
-			swearCounter.setIncludeMessages(includeMessages);
-			try {
-				swearCounter.count();
-			} catch (IOException | BinaryBlobException | GitAPIException e) {
-				promise.fail(e);
-				return;
-			}
-			promise.complete(swearCounter);
+			METRICS_COUNT_TIME.time(() -> {
+				final SwearCounter swearCounter = new SwearCounter(repo, this.swearService.getSwearList());
+				swearCounter.setMainRef(branch);
+				swearCounter.setIncludeMessages(includeMessages);
+				try {
+					swearCounter.count();
+				} catch (IOException | BinaryBlobException | GitAPIException e) {
+					promise.fail(e);
+					return;
+				}
+				promise.complete(swearCounter);
+			});
 		}, handler);
 	}
 
@@ -282,6 +294,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	public void error(final RoutingContext ctx, final int status, final String msg, final Throwable t) {
 		this.response(ctx, status, new JsonObject().put("error", t.getMessage()).put("message", msg));
 		LOG.error("[" + ctx.get("clientId") + "] error sending result", t);
+		METRICS_ERROR.inc();
 	}
 
 	public void response(final RoutingContext ctx, final int status, final JsonObject content) {
