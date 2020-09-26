@@ -32,9 +32,11 @@ public class JsonRequest extends GitRequest<JsonObject> {
 
 		objRes.put("histogram", finalCount);
 
-		final WordCount mostUsed = Collections.max(finalCount.values(),
-				(o1, o2) -> Long.compare(o1.getEffectiveCount(), o2.getEffectiveCount()));
-		objRes.put("mostUsed", JsonObject.mapFrom(mostUsed));
+		if (finalCount.size() != 0) {
+			final WordCount mostUsed = Collections.max(finalCount.values(),
+					(o1, o2) -> Long.compare(o1.getEffectiveCount(), o2.getEffectiveCount()));
+			objRes.put("mostUsed", JsonObject.mapFrom(mostUsed));
+		}
 
 		long total = 0;
 		for (final WordCount c : finalCount.values()) {
