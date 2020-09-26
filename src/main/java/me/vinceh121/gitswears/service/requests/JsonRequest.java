@@ -34,14 +34,13 @@ public class JsonRequest extends GitRequest<JsonObject> {
 
 		final WordCount mostUsed = Collections.max(finalCount.values(),
 				(o1, o2) -> Long.compare(o1.getEffectiveCount(), o2.getEffectiveCount()));
+		objRes.put("mostUsed", JsonObject.mapFrom(mostUsed));
 
 		long total = 0;
 		for (final WordCount c : finalCount.values()) {
 			total += c.getEffectiveCount();
 		}
 		objRes.put("total", total);
-
-		objRes.put("mostUsed", mostUsed);
 
 		objRes.put("includesMessages", counter.isIncludeMessages());
 		objRes.put("mainRef", counter.getMainRef());
