@@ -24,5 +24,5 @@ To know more on the endpoints, see the [wiki](https://github.com/vinceh121/git-s
 
 **TBD**
 
-## Why is the code runnig this ugly?
+## Why is the code running this ugly?
 You think this is supposed to be a serious project?
