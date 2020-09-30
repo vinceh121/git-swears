@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -17,7 +18,9 @@ import org.slf4j.LoggerFactory;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisAPI;
@@ -58,8 +61,14 @@ public class SwearService {
 		}
 
 		this.initMetrics();
-		
-		this.vertx = Vertx.vertx();
+
+		try {
+			this.vertx = Vertx.vertx(new VertxOptions(
+					new JsonObject(new String(Files.readAllBytes(Paths.get("/etc/git-swears/vertx.json"))))));
+		} catch (final IOException e) {
+			throw new RuntimeException("Failed to load vertx config", e);
+		}
+
 		this.vertx.exceptionHandler(t -> LOG.error("Unexpected Vert.x exception", t));
 
 		final Redis redis = Redis.createClient(this.vertx, this.config.getProperty("redis.constring"));
