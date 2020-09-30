@@ -64,7 +64,7 @@ public class SwearService {
 
 		try {
 			this.vertx = Vertx.vertx(new VertxOptions(
-					new JsonObject(new String(Files.readAllBytes(Paths.get("/etc/git-swears/vertx.json"))))));
+					new JsonObject(new String(Files.readAllBytes(Paths.get("/etc/gitswears/vertx.json"))))));
 		} catch (final IOException e) {
 			throw new RuntimeException("Failed to load vertx config", e);
 		}
