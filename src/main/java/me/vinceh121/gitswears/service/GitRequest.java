@@ -105,10 +105,11 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 
 		this.fetchCached(jobName).onComplete(cacheRes -> {
 			if (cacheRes.succeeded()) {
-				LOG.info("[{}] cached response for job {}", clientId, jobName);
 				if (!cacheRes.result().toString().equals(PROGRESS_VALUE)) {
+					LOG.info("[{}] cached response for job {}", clientId, jobName);
 					this.sendCached0(ctx, cacheRes.result(), null);
 				} else {
+					LOG.info("[{}] in progress response for job {}", clientId, jobName);
 					this.response(ctx, 102, new JsonObject().put("message", "Request is in progress"));
 				}
 				return;
@@ -116,20 +117,25 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 
 			this.markInProgress(jobName);
 
+			LOG.info("[{}] requested job {}", clientId, jobName);
+
 			this.cloneRepo(uri, branch, repoId, cloneRes -> {
 				if (cloneRes.failed()) {
-					this.error(ctx, 503, "Clone failed: " + cloneRes.cause());
+					this.error(ctx, 503, "Clone failed", cloneRes.cause());
+					this.unmarkInProgress(jobName);
 					return;
 				}
 				LOG.info("[{}] clone success for job {}", clientId, jobName);
 				this.checkSize(cloneRes.result(), branch, checkRes -> {
 					if (checkRes.failed()) {
-						this.error(ctx, 500, "Failed to pre-count commits");
+						this.error(ctx, 500, "Failed to pre-count commits", checkRes.cause());
+						this.unmarkInProgress(jobName);
 						this.deleteRepo(cloneRes.result().getRepository());
 						return;
 					}
 					if (checkRes.result()) {
 						this.error(ctx, 400, "Repository exceeds limit of " + COMMIT_LIMIT + " commits");
+						this.unmarkInProgress(jobName);
 						this.deleteRepo(cloneRes.result().getRepository());
 						return;
 					}
@@ -137,6 +143,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 					this.countSwears(cloneRes.result().getRepository(), branch, includeMessages, countRes -> {
 						if (countRes.failed()) {
 							this.error(ctx, 500, "Git error while counting", countRes.cause());
+							this.unmarkInProgress(jobName);
 							this.deleteRepo(cloneRes.result().getRepository());
 							return;
 						}
@@ -147,6 +154,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 						this.sendResult0(ctx, count, sendRes -> {
 							if (sendRes.failed()) {
 								this.error(ctx, 400, "Error while sending result", sendRes.cause());
+								this.unmarkInProgress(jobName);
 								this.deleteRepo(cloneRes.result().getRepository());
 								return;
 							}
@@ -242,9 +250,11 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	}
 
 	private void markInProgress(final String key) {
-		this.swearService.getRedisApi()
-				.setex(key, this.swearService.getConfig().getProperty("redis.counttimeout"), PROGRESS_VALUE,
-						hndl -> {});
+		this.swearService.getRedisApi().set(Arrays.asList(key, PROGRESS_VALUE), hndl -> {});
+	}
+
+	private void unmarkInProgress(final String key) {
+		this.swearService.getRedisApi().del(Arrays.asList(key), res -> {});
 	}
 
 	private Future<Response> fetchCached(final String key) {
@@ -293,7 +303,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 
 	public void error(final RoutingContext ctx, final int status, final String msg, final Throwable t) {
 		this.response(ctx, status, new JsonObject().put("error", t.getMessage()).put("message", msg));
-		LOG.error("[" + ctx.get("clientId") + "] error sending result", t);
+		LOG.error("[" + ctx.get("clientId") + "] error sending result: " + msg, t);
 		METRICS_ERROR.inc();
 	}
 
