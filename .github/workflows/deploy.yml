@@ -35,3 +35,4 @@ jobs:
         source: "git-swears"
         target: "/usr/bin"
         overwrite: true
+        debug: true
