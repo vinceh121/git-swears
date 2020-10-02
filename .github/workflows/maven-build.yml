@@ -23,9 +23,7 @@ jobs:
       with:
         java-version: 1.8
     - name: Build with Maven
-      with:
-        profiles: ${{ matrix.profiles }}
-      run: mvn -B compile assembly:single --file pom.xml -P ${profiles}
+      run: mvn -B compile assembly:single --file pom.xml -P ${{ matrix.profiles }}
     - uses: actions/upload-artifact@v2
       with:
         name: target
