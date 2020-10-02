@@ -29,7 +29,27 @@ Using shields.io's dynamic json endpoint you can interface with the service to g
 
 ## How to use the command line
 
-**TBD**
+```
+usage: git-swears
+ -a,--list-graphs        Lists available graph types
+ -b,--branch <arg>       Git branch to count in
+ -g,--graph <arg>        Outputs a graph
+ -i,--image-type <arg>   Image type
+ -r,--repo <arg>         Path to the git repository
+ -s,--swears <arg>       Swear list. Either a comma-separated list, or
+                         fully qualified URL to a newline-separated list
+ -t,--list-image-types   Image type
+```
+
+## Build instructions
+
+`mvn compile assembly:single -P <profiles>`
+
+The following Maven profiles are available:
+
+ - `<none>` builds what's needed to use git-swears as a library
+ - `cli` builds the base + the CLI
+ - `service` builds the base + the Vert.x service
 
 ## Why is the code running this ugly?
 You think this is supposed to be a serious project?
