@@ -36,8 +36,11 @@
 
 		<swear.cli.path>**/me/vinceh121/gitswears/cli/**/**.java</swear.cli.path>
 		<swear.service.path>**/me/vinceh121/gitswears/service/**/**.java</swear.service.path>
-
+		
+		<swear.jarSuffix>dev</swear.jarSuffix>
+		
 		<vertx.version>3.9.2</vertx.version>
+		<prometheus.version>0.9.0</prometheus.version>
 	</properties>
 
 	<profiles>
@@ -66,12 +69,12 @@
 				<dependency>
 					<groupId>io.vertx</groupId>
 					<artifactId>vertx-web</artifactId>
-					<version>3.9.2</version>
+					<version>${vertx.version}</version>
 				</dependency>
 				<dependency>
 					<groupId>io.vertx</groupId>
 					<artifactId>vertx-redis-client</artifactId>
-					<version>3.9.2</version>
+					<version>${vertx.version}</version>
 				</dependency>
 				<dependency>
 					<groupId>ch.qos.logback</groupId>
@@ -81,22 +84,22 @@
 				<dependency>
 					<groupId>io.prometheus</groupId>
 					<artifactId>simpleclient</artifactId>
-					<version>0.9.0</version>
+					<version>${prometheus.version}</version>
 				</dependency>
 				<dependency>
 					<groupId>io.prometheus</groupId>
 					<artifactId>simpleclient_hotspot</artifactId>
-					<version>0.9.0</version>
+					<version>${prometheus.version}</version>
 				</dependency>
 				<dependency>
 					<groupId>io.prometheus</groupId>
 					<artifactId>simpleclient_httpserver</artifactId>
-					<version>0.9.0</version>
+					<version>${prometheus.version}</version>
 				</dependency>
 				<dependency>
 					<groupId>io.prometheus</groupId>
 					<artifactId>simpleclient_logback</artifactId>
-					<version>0.9.0</version>
+					<version>${prometheus.version}</version>
 				</dependency>
 			</dependencies>
 		</profile>
@@ -142,6 +145,7 @@
 							<mainClass>${swear.mainclass}</mainClass>
 						</manifest>
 					</archive>
+					<finalName>${project.build.finalName}-${swear.jarSuffix}</finalName>
 					<descriptorRefs>
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
