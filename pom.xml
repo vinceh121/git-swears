@@ -31,77 +31,112 @@
 		<java.version>1.8</java.version>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<maven.compiler.source>1.8</maven.compiler.source>
+
+		<swear.mainclass>null</swear.mainclass>
+
+		<swear.cli.path>**/me/vinceh121/gitswears/cli/*.java</swear.cli.path>
+		<swear.service.path>**/me/vinceh121/gitswears/service/**.java</swear.service.path>
 	</properties>
 
+	<profiles>
+		<profile>
+			<id>cli</id>
+			<properties>
+				<swear.mainclass>me.vinceh121.gitswears.cli.SwearCommandLine</swear.mainclass>
+				<swear.cli.path>null</swear.cli.path>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>commons-cli</groupId>
+					<artifactId>commons-cli</artifactId>
+					<version>1.4</version>
+				</dependency>
+			</dependencies>
+		</profile>
+
+		<profile>
+			<id>service</id>
+			<properties>
+				<swear.mainclass>me.vinceh121.gitswears.service.SwearService</swear.mainclass>
+				<swear.service.path>null</swear.service.path>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>io.vertx</groupId>
+					<artifactId>vertx-web</artifactId>
+					<version>3.9.2</version>
+				</dependency>
+				<dependency>
+					<groupId>io.vertx</groupId>
+					<artifactId>vertx-redis-client</artifactId>
+					<version>3.9.2</version>
+				</dependency>
+				<dependency>
+					<groupId>ch.qos.logback</groupId>
+					<artifactId>logback-classic</artifactId>
+					<version>1.2.3</version>
+				</dependency>
+				<dependency>
+					<groupId>io.prometheus</groupId>
+					<artifactId>simpleclient</artifactId>
+					<version>0.9.0</version>
+				</dependency>
+				<dependency>
+					<groupId>io.prometheus</groupId>
+					<artifactId>simpleclient_hotspot</artifactId>
+					<version>0.9.0</version>
+				</dependency>
+				<dependency>
+					<groupId>io.prometheus</groupId>
+					<artifactId>simpleclient_httpserver</artifactId>
+					<version>0.9.0</version>
+				</dependency>
+				<dependency>
+					<groupId>io.prometheus</groupId>
+					<artifactId>simpleclient_logback</artifactId>
+					<version>0.9.0</version>
+				</dependency>
+			</dependencies>
+		</profile>
+	</profiles>
+
 	<dependencies>
-		<!-- https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit -->
 		<dependency>
 			<groupId>org.eclipse.jgit</groupId>
 			<artifactId>org.eclipse.jgit</artifactId>
 			<version>5.8.1.202007141445-r</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.jfree/jfreechart -->
 		<dependency>
 			<groupId>org.jfree</groupId>
 			<artifactId>jfreechart</artifactId>
 			<version>1.5.0</version>
 		</dependency>
 		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-web</artifactId>
-			<version>3.9.2</version>
-		</dependency>
-		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-redis-client</artifactId>
-			<version>3.9.2</version>
-		</dependency>
-
-		<!-- https://mvnrepository.com/artifact/commons-cli/commons-cli -->
-		<dependency>
-			<groupId>commons-cli</groupId>
-			<artifactId>commons-cli</artifactId>
-			<version>1.4</version>
-		</dependency>
-
-
-		<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-classic</artifactId>
-			<version>1.2.3</version>
-		</dependency>
-
-
-		<dependency>
-			<groupId>io.prometheus</groupId>
-			<artifactId>simpleclient</artifactId>
-			<version>0.9.0</version>
-		</dependency>
-		<dependency>
-			<groupId>io.prometheus</groupId>
-			<artifactId>simpleclient_hotspot</artifactId>
-			<version>0.9.0</version>
-		</dependency>
-		<dependency>
-			<groupId>io.prometheus</groupId>
-			<artifactId>simpleclient_httpserver</artifactId>
-			<version>0.9.0</version>
-		</dependency>
-		<dependency>
-			<groupId>io.prometheus</groupId>
-			<artifactId>simpleclient_logback</artifactId>
-			<version>0.9.0</version>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.11.2</version>
 		</dependency>
 	</dependencies>
-
 	<build>
 		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.7.0</version>
+				<configuration>
+					<excludes>
+						<exclude>${swear.cli.path}</exclude>
+						<exclude>${swear.service.path}</exclude>
+					</excludes>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+				</configuration>
+			</plugin>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>me.vinceh121.gitswears.service.SwearService</mainClass>
+							<mainClass>${swear.mainclass}</mainClass>
 						</manifest>
 					</archive>
 					<descriptorRefs>
