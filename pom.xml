@@ -100,13 +100,18 @@
 					<artifactId>metrics-graphite</artifactId>
 					<version>4.1.13</version>
 				</dependency>
+				<!-- https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-logback -->
+				<dependency>
+					<groupId>io.dropwizard.metrics</groupId>
+					<artifactId>metrics-logback</artifactId>
+					<version>4.1.13</version>
+				</dependency>
 				<!-- https://mvnrepository.com/artifact/io.vertx/vertx-dropwizard-metrics -->
 				<dependency>
 					<groupId>io.vertx</groupId>
 					<artifactId>vertx-dropwizard-metrics</artifactId>
 					<version>${vertx.version}</version>
 				</dependency>
-
 			</dependencies>
 		</profile>
 	</profiles>
