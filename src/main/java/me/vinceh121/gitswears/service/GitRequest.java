@@ -190,7 +190,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 					}
 				}
 				promise.complete(count > COMMIT_LIMIT);
-			} catch (GitAPIException e) {
+			} catch (final GitAPIException e) {
 				promise.fail(e);
 			}
 		}, handler);

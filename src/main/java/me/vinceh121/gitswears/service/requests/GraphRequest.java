@@ -27,7 +27,7 @@ public class GraphRequest extends GitRequest<BufferedImage> {
 	}
 
 	@Override
-	protected void validateSyntax(RoutingContext ctx) {
+	protected void validateSyntax(final RoutingContext ctx) {
 		final String type = ctx.request().getParam("type");
 		if (type == null) {
 			throw new RuntimeException("missing field type");
@@ -35,7 +35,7 @@ public class GraphRequest extends GitRequest<BufferedImage> {
 	}
 
 	@Override
-	protected List<String> getExtraJobKey(RoutingContext ctx) {
+	protected List<String> getExtraJobKey(final RoutingContext ctx) {
 		return Arrays.asList(ctx.request().getParam("type"));
 	}
 

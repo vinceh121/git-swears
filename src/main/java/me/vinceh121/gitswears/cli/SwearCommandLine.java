@@ -42,14 +42,14 @@ public class SwearCommandLine {
 		final SwearCommandLine cli = new SwearCommandLine(args);
 		try {
 			cli.start();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			System.err.println("Error while counting: ");
 			e.printStackTrace();
 			System.exit(-5);
 		}
 		try {
 			cli.output();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			System.err.println("Error while generating output: ");
 			e.printStackTrace();
 			System.exit(-6);
@@ -58,31 +58,31 @@ public class SwearCommandLine {
 
 	public SwearCommandLine(final String[] args) {
 		if (args.length == 0) {
-			printHelp();
+			this.printHelp();
 			System.exit(0);
 		}
 
 		final CommandLineParser parse = new DefaultParser();
 		try {
-			cli = parse.parse(CLI_OPTIONS, args);
+			this.cli = parse.parse(CLI_OPTIONS, args);
 		} catch (final org.apache.commons.cli.ParseException e) {
 			e.printStackTrace();
 			System.exit(-1);
 			throw new RuntimeException(e);
 		}
 
-		doTerminatingCommands();
+		this.doTerminatingCommands();
 
 		try {
-			validateInput(cli);
+			this.validateInput(this.cli);
 		} catch (final IllegalArgumentException e) {
 			System.err.println("Invalid CLI: " + e.getMessage());
-			printHelp();
+			this.printHelp();
 			System.exit(-1);
 		}
 
 		try {
-			count = buildCounter();
+			this.count = this.buildCounter();
 		} catch (final Exception e) {
 			System.err.println("Failed to build counter");
 			e.printStackTrace();
@@ -90,17 +90,18 @@ public class SwearCommandLine {
 			throw new RuntimeException(e);
 		}
 
-		if (cli.hasOption('b'))
-			count.setMainRef(cli.getOptionValue('b'));
+		if (this.cli.hasOption('b')) {
+			this.count.setMainRef(this.cli.getOptionValue('b'));
+		}
 	}
 
 	public void start() throws MissingObjectException, IncorrectObjectTypeException, CorruptObjectException,
 			IOException, BinaryBlobException, GitAPIException {
-		count.count();
+		this.count.count();
 	}
 
 	public void output() throws Exception {
-		if (cli.hasOption('g')) {
+		if (this.cli.hasOption('g')) {
 			this.outputImg();
 		} else {
 			this.outputHuman();
@@ -108,24 +109,25 @@ public class SwearCommandLine {
 	}
 
 	private void outputImg() throws Exception {
-		final String imgFormat = cli.hasOption('i') ? cli.getOptionValue('i') : "png";
-		final GraphGenerator graph
-				= GRAPH_TYPES.get(cli.getOptionValue('g')).getConstructor(SwearCounter.class).newInstance(this.count);
+		final String imgFormat = this.cli.hasOption('i') ? this.cli.getOptionValue('i') : "png";
+		final GraphGenerator graph = GRAPH_TYPES.get(this.cli.getOptionValue('g'))
+				.getConstructor(SwearCounter.class)
+				.newInstance(this.count);
 
 		final BufferedImage img = graph.generateImage();
 		ImageIO.write(img, imgFormat, System.out);
 	}
 
 	private void outputHuman() { // TODO
-		System.out.println(count.getFinalCount());
+		System.out.println(this.count.getFinalCount());
 	}
 
 	public SwearCounter buildCounter() throws IOException {
-		final Repository repo = new FileRepository(cli.getOptionValue('r'));
+		final Repository repo = new FileRepository(this.cli.getOptionValue('r'));
 		final List<String> swears = new Vector<>();
 
 		try {
-			final URL url = new URL(cli.getOptionValue('s'));
+			final URL url = new URL(this.cli.getOptionValue('s'));
 			final BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
 			String line;
 			while ((line = br.readLine()) != null) {
@@ -133,14 +135,14 @@ public class SwearCommandLine {
 			}
 			br.close();
 		} catch (final MalformedURLException e) {
-			swears.addAll(Arrays.asList(cli.getOptionValue('s').split(",")));
+			swears.addAll(Arrays.asList(this.cli.getOptionValue('s').split(",")));
 		}
 
 		return new SwearCounter(repo, swears);
 	}
 
 	public void doTerminatingCommands() {
-		if (cli.hasOption('t')) {
+		if (this.cli.hasOption('t')) {
 			System.err.println("Available image formats:");
 			for (final String fmt : ImageIO.getWriterFormatNames()) {
 				System.out.println(fmt);
@@ -148,7 +150,7 @@ public class SwearCommandLine {
 			System.exit(0);
 		}
 
-		if (cli.hasOption('a')) {
+		if (this.cli.hasOption('a')) {
 			System.err.println("Available graph types:");
 			for (final String g : GRAPH_TYPES.keySet()) {
 				System.out.println(g);
