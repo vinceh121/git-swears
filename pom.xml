@@ -36,9 +36,9 @@
 
 		<swear.cli.path>**/me/vinceh121/gitswears/cli/**/**.java</swear.cli.path>
 		<swear.service.path>**/me/vinceh121/gitswears/service/**/**.java</swear.service.path>
-		
+
 		<swear.jarSuffix>dev</swear.jarSuffix>
-		
+
 		<vertx.version>3.9.2</vertx.version>
 		<prometheus.version>0.9.0</prometheus.version>
 	</properties>
@@ -81,26 +81,32 @@
 					<artifactId>logback-classic</artifactId>
 					<version>1.2.3</version>
 				</dependency>
+
+				<!-- https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-core -->
 				<dependency>
-					<groupId>io.prometheus</groupId>
-					<artifactId>simpleclient</artifactId>
-					<version>${prometheus.version}</version>
+					<groupId>io.dropwizard.metrics</groupId>
+					<artifactId>metrics-core</artifactId>
+					<version>4.1.13</version>
 				</dependency>
+				<!-- https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-jvm -->
 				<dependency>
-					<groupId>io.prometheus</groupId>
-					<artifactId>simpleclient_hotspot</artifactId>
-					<version>${prometheus.version}</version>
+					<groupId>io.dropwizard.metrics</groupId>
+					<artifactId>metrics-jvm</artifactId>
+					<version>4.1.13</version>
 				</dependency>
+				<!-- https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-graphite -->
 				<dependency>
-					<groupId>io.prometheus</groupId>
-					<artifactId>simpleclient_httpserver</artifactId>
-					<version>${prometheus.version}</version>
+					<groupId>io.dropwizard.metrics</groupId>
+					<artifactId>metrics-graphite</artifactId>
+					<version>4.1.13</version>
 				</dependency>
+				<!-- https://mvnrepository.com/artifact/io.vertx/vertx-dropwizard-metrics -->
 				<dependency>
-					<groupId>io.prometheus</groupId>
-					<artifactId>simpleclient_logback</artifactId>
-					<version>${prometheus.version}</version>
+					<groupId>io.vertx</groupId>
+					<artifactId>vertx-dropwizard-metrics</artifactId>
+					<version>${vertx.version}</version>
 				</dependency>
+
 			</dependencies>
 		</profile>
 	</profiles>

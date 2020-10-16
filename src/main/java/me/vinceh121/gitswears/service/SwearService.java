@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -11,16 +12,24 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.prometheus.client.exporter.HTTPServer;
-import io.prometheus.client.hotspot.DefaultExports;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.graphite.Graphite;
+import com.codahale.metrics.graphite.GraphiteReporter;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.metrics.MetricsOptions;
+import io.vertx.ext.dropwizard.DropwizardMetricsOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisAPI;
@@ -28,6 +37,7 @@ import me.vinceh121.gitswears.service.requests.GraphRequest;
 import me.vinceh121.gitswears.service.requests.JsonRequest;
 
 public class SwearService {
+	public static final MetricRegistry METRIC_REGISTRY = new MetricRegistry();
 	private static final Logger LOG = LoggerFactory.getLogger(SwearService.class);
 	private final Properties config = new Properties();
 	private final Collection<String> allowedHosts = Arrays.asList("github.com", "gitlab.com", "codeberg.org");
@@ -64,7 +74,10 @@ public class SwearService {
 
 		try {
 			this.vertx = Vertx.vertx(new VertxOptions(
-					new JsonObject(new String(Files.readAllBytes(Paths.get("/etc/gitswears/vertx.json"))))));
+					new JsonObject(new String(Files.readAllBytes(Paths.get("/etc/gitswears/vertx.json")))))
+							.setMetricsOptions(this.config.containsKey("metrics.host")
+									? new DropwizardMetricsOptions().setEnabled(true)
+									: new MetricsOptions()));
 		} catch (final IOException e) {
 			throw new RuntimeException("Failed to load vertx config", e);
 		}
@@ -106,19 +119,27 @@ public class SwearService {
 	}
 
 	private void initMetrics() {
-		if (!this.config.containsKey("metrics.port")) {
+		if (!this.config.containsKey("metrics.host")) {
 			return;
 		}
+		final String host = this.config.getProperty("metrics.host");
 		final int port = Integer.parseInt(this.config.getProperty("metrics.port"));
+		final long period = Long.parseLong(this.config.getProperty("metrics.period"));
 
 		LOG.info("Starting metrics");
 
-		DefaultExports.initialize();
-		try {
-			new HTTPServer("127.0.0.1", port, true);
-		} catch (IOException e) {
-			LOG.error("Failed to start metrics HTTP server", e);
-		}
+		METRIC_REGISTRY.registerAll("git-swears-gc", new GarbageCollectorMetricSet());
+		METRIC_REGISTRY.registerAll("git-swears-mem", new MemoryUsageGaugeSet());
+
+		final Graphite graphite = new Graphite(new InetSocketAddress(host, port));
+		final GraphiteReporter graphiteReporter = GraphiteReporter.forRegistry(METRIC_REGISTRY)
+				.prefixedWith("git-swears")
+				.convertRatesTo(TimeUnit.MILLISECONDS)
+				.convertDurationsTo(TimeUnit.MILLISECONDS)
+				.filter(MetricFilter.ALL)
+				.build(graphite);
+
+		graphiteReporter.start(period, TimeUnit.MINUTES);
 	}
 
 	public RedisAPI getRedisApi() {

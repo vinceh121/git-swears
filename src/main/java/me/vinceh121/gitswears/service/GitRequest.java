@@ -22,8 +22,10 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Histogram;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.MetricRegistry;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -39,10 +41,11 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(GitRequest.class);
 	private static final Histogram METRICS_CLONE_TIME
-			= Histogram.build("clone_time", "Time taken to clone repos").register();
+			= SwearService.METRIC_REGISTRY.histogram(MetricRegistry.name(GitRequest.class, "clone.time"));
 	private static final Histogram METRICS_COUNT_TIME
-			= Histogram.build("count_time", "Time taken to count swears in repos").register();
-	private static final Counter METRICS_ERROR = Counter.build("error_count", "Count of all errors").register();
+			= SwearService.METRIC_REGISTRY.histogram(MetricRegistry.name(GitRequest.class, "count.time"));
+	private static final Counter METRICS_ERROR
+			= SwearService.METRIC_REGISTRY.counter(MetricRegistry.name(GitRequest.class, "errors"));
 
 	private final SwearService swearService;
 	private final WorkerExecutor worker;
@@ -196,47 +199,47 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	private void cloneRepo(final String uri, final String branch, final String repoId,
 			final Handler<AsyncResult<Git>> handler) {
 		this.worker.executeBlocking(promise -> {
-			METRICS_CLONE_TIME.time(() -> {
-				final File out = Paths.get(this.swearService.getRootDir().toString(), repoId).toFile();
-				if (out.exists()) {
-					try {
-						promise.complete(Git.open(out));
-					} catch (final IOException e) {
-						promise.fail(e);
-					}
-				}
-				final CloneCommand cmd = Git.cloneRepository()
-						.setBare(true)
-						.setURI(uri)
-						.setDirectory(out)
-						.setCloneAllBranches(false)
-						/* .setBranchesToClone(Collections.singleton(branch)) */
-						.setBranch(branch)
-						.setTimeout(30);
+			final long startTime = System.currentTimeMillis();
+			final File out = Paths.get(this.swearService.getRootDir().toString(), repoId).toFile();
+			if (out.exists()) {
 				try {
-					promise.complete(cmd.call());
-				} catch (final GitAPIException e) {
+					promise.complete(Git.open(out));
+				} catch (final IOException e) {
 					promise.fail(e);
 				}
-			});
+			}
+			final CloneCommand cmd = Git.cloneRepository()
+					.setBare(true)
+					.setURI(uri)
+					.setDirectory(out)
+					.setCloneAllBranches(false)
+					/* .setBranchesToClone(Collections.singleton(branch)) */
+					.setBranch(branch)
+					.setTimeout(30);
+			METRICS_CLONE_TIME.update(System.currentTimeMillis() - startTime);
+			try {
+				promise.complete(cmd.call());
+			} catch (final GitAPIException e) {
+				promise.fail(e);
+			}
 		}, handler);
 	}
 
 	private void countSwears(final Repository repo, final String branch, final boolean includeMessages,
 			final Handler<AsyncResult<SwearCounter>> handler) {
 		this.worker.executeBlocking(promise -> {
-			METRICS_COUNT_TIME.time(() -> {
-				final SwearCounter swearCounter = new SwearCounter(repo, this.swearService.getSwearList());
-				swearCounter.setMainRef(branch);
-				swearCounter.setIncludeMessages(includeMessages);
-				try {
-					swearCounter.count();
-				} catch (IOException | BinaryBlobException | GitAPIException e) {
-					promise.fail(e);
-					return;
-				}
-				promise.complete(swearCounter);
-			});
+			final long startTime = System.currentTimeMillis();
+			final SwearCounter swearCounter = new SwearCounter(repo, this.swearService.getSwearList());
+			swearCounter.setMainRef(branch);
+			swearCounter.setIncludeMessages(includeMessages);
+			METRICS_COUNT_TIME.update(System.currentTimeMillis() - startTime);
+			try {
+				swearCounter.count();
+			} catch (IOException | BinaryBlobException | GitAPIException e) {
+				promise.fail(e);
+				return;
+			}
+			promise.complete(swearCounter);
 		}, handler);
 	}
 
