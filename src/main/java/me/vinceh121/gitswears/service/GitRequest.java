@@ -41,9 +41,9 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(GitRequest.class);
 	private static final Histogram METRICS_CLONE_TIME
-			= SwearService.METRIC_REGISTRY.histogram(MetricRegistry.name("git-swears", "service", "clone.time"));
+			= SwearService.METRIC_REGISTRY.histogram(MetricRegistry.name("git-swears", "service", "clone", "time"));
 	private static final Histogram METRICS_COUNT_TIME
-			= SwearService.METRIC_REGISTRY.histogram(MetricRegistry.name("git-swears", "service", "count.time"));
+			= SwearService.METRIC_REGISTRY.histogram(MetricRegistry.name("git-swears", "service", "count", "time"));
 	private static final Counter METRICS_ERROR
 			= SwearService.METRIC_REGISTRY.counter(MetricRegistry.name("git-swears", "service", "errors"));
 
