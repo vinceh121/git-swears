@@ -63,7 +63,9 @@ public class SwearService {
 			final BufferedReader br = new BufferedReader(new FileReader("/etc/gitswears/swears.txt"));
 			String line;
 			while ((line = br.readLine()) != null) {
-				this.swearList.add(line.trim());
+				line = line.trim();
+				if (!line.startsWith("#"))
+					this.swearList.add(line);
 			}
 			br.close();
 		} catch (final IOException e) {
