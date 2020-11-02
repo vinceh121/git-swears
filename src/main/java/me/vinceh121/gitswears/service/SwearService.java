@@ -14,6 +14,7 @@ import java.util.Properties;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,11 +24,13 @@ import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.core.metrics.MetricsOptions;
 import io.vertx.ext.dropwizard.DropwizardMetricsOptions;
 import io.vertx.ext.web.Router;
@@ -49,6 +52,10 @@ public class SwearService {
 	private final RedisAPI redisApi;
 
 	public static void main(final String[] args) {
+		final SimpleModule gitModule = new SimpleModule();
+		gitModule.addSerializer(AbbreviatedObjectId.class, new JsonUtils.AbbreviatedObjectIdSerializer());
+		DatabindCodec.mapper().registerModule(gitModule);
+
 		final SwearService service = new SwearService();
 		service.start();
 	}

@@ -202,6 +202,29 @@ public class SwearCounter {
 		}
 	}
 
+	public CountSummary generateSummary() {
+		final CountSummary sum = new CountSummary();
+		sum.setTimeline(getMap());
+		sum.setHistogram(getFinalCount());
+		
+		if (sum.getHistogram().size() != 0) {
+			final WordCount mostUsed = Collections.max(sum.getHistogram().values(),
+					(o1, o2) -> Long.compare(o1.getEffectiveCount(), o2.getEffectiveCount()));
+			sum.setMostUsed(mostUsed);
+		}
+		
+		long total = 0;
+		for (final WordCount c : sum.getHistogram().values()) {
+			total += c.getEffectiveCount();
+		}
+		sum.setTotal(total);
+		
+		sum.setIncludeMessages(isIncludeMessages());
+		sum.setMainRef(getMainRef());
+		
+		return sum;
+	}
+
 	public Map<AbbreviatedObjectId, CommitCount> getMap() {
 		return this.map;
 	}
@@ -233,4 +256,5 @@ public class SwearCounter {
 	public void setIncludeMessages(final boolean includeMessages) {
 		this.includeMessages = includeMessages;
 	}
+
 }
