@@ -11,6 +11,8 @@ import me.vinceh121.gitswears.WordCount;
 public class TotalSwearHistogram extends GraphGenerator {
 	public TotalSwearHistogram(final SwearCounter counter) {
 		super(counter);
+		this.width = 600;
+		this.height = 500;
 	}
 
 	@Override

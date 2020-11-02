@@ -33,6 +33,8 @@ public class TotalTimeLine extends GraphGenerator {
 
 	public TotalTimeLine(final SwearCounter counter) {
 		super(counter);
+		this.width = 1024;
+		this.height = 500;
 	}
 
 	@Override
