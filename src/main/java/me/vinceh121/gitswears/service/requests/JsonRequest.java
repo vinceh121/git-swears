@@ -18,6 +18,7 @@ public class JsonRequest extends GitRequest<JsonObject> {
 		this.response(ctx, 200, new JsonObject(redisRes.toBuffer()));
 	}
 
+	@Override
 	protected JsonObject sendResult(final RoutingContext ctx, final SwearCounter counter) {
 		final JsonObject obj = JsonObject.mapFrom(counter.generateSummary());
 		this.response(ctx, 201, obj);

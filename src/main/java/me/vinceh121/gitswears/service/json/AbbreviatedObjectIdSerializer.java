@@ -11,13 +11,13 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 public class AbbreviatedObjectIdSerializer extends StdSerializer<AbbreviatedObjectId> {
 	private static final long serialVersionUID = 1L;
 
-	protected AbbreviatedObjectIdSerializer() {
+	public AbbreviatedObjectIdSerializer() {
 		super(AbbreviatedObjectId.class);
 	}
 
 	@Override
-	public void serialize(final AbbreviatedObjectId value, final JsonGenerator gen,
-			final SerializerProvider provider) throws IOException {
+	public void serialize(final AbbreviatedObjectId value, final JsonGenerator gen, final SerializerProvider provider)
+			throws IOException {
 		gen.writeString(value.name());
 	}
 }

@@ -76,8 +76,9 @@ public class SwearService {
 			String line;
 			while ((line = br.readLine()) != null) {
 				line = line.trim();
-				if (!line.startsWith("#"))
+				if (!line.startsWith("#")) {
 					this.swearList.add(line);
+				}
 			}
 			br.close();
 		} catch (final IOException e) {

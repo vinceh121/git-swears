@@ -204,24 +204,24 @@ public class SwearCounter {
 
 	public CountSummary generateSummary() {
 		final CountSummary sum = new CountSummary();
-		sum.setTimeline(getMap());
-		sum.setHistogram(getFinalCount());
-		
+		sum.setTimeline(this.getMap());
+		sum.setHistogram(this.getFinalCount());
+
 		if (sum.getHistogram().size() != 0) {
 			final WordCount mostUsed = Collections.max(sum.getHistogram().values(),
 					(o1, o2) -> Long.compare(o1.getEffectiveCount(), o2.getEffectiveCount()));
 			sum.setMostUsed(mostUsed);
 		}
-		
+
 		long total = 0;
 		for (final WordCount c : sum.getHistogram().values()) {
 			total += c.getEffectiveCount();
 		}
 		sum.setTotal(total);
-		
-		sum.setIncludeMessages(isIncludeMessages());
-		sum.setMainRef(getMainRef());
-		
+
+		sum.setIncludeMessages(this.isIncludeMessages());
+		sum.setMainRef(this.getMainRef());
+
 		return sum;
 	}
 

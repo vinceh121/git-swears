@@ -11,8 +11,8 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 public class AbbreviatedObjectIdKeySerializer extends JsonSerializer<AbbreviatedObjectId> {
 
 	@Override
-	public void serialize(AbbreviatedObjectId value, JsonGenerator gen, SerializerProvider serializers)
-			throws IOException {
+	public void serialize(final AbbreviatedObjectId value, final JsonGenerator gen,
+			final SerializerProvider serializers) throws IOException {
 		gen.writeFieldName(value.name());
 	}
 
