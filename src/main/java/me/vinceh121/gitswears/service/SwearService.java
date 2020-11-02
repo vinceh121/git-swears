@@ -36,6 +36,9 @@ import io.vertx.ext.dropwizard.DropwizardMetricsOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisAPI;
+import me.vinceh121.gitswears.service.json.AbbreviatedObjectIdDeserializer;
+import me.vinceh121.gitswears.service.json.AbbreviatedObjectIdKeySerializer;
+import me.vinceh121.gitswears.service.json.AbbreviatedObjectIdSerializer;
 import me.vinceh121.gitswears.service.requests.GraphRequest;
 import me.vinceh121.gitswears.service.requests.JsonRequest;
 
@@ -53,7 +56,9 @@ public class SwearService {
 
 	public static void main(final String[] args) {
 		final SimpleModule gitModule = new SimpleModule();
-		gitModule.addSerializer(AbbreviatedObjectId.class, new JsonUtils.AbbreviatedObjectIdSerializer());
+		gitModule.addSerializer(AbbreviatedObjectId.class, new AbbreviatedObjectIdSerializer());
+		gitModule.addDeserializer(AbbreviatedObjectId.class, new AbbreviatedObjectIdDeserializer());
+		gitModule.addKeySerializer(AbbreviatedObjectId.class, new AbbreviatedObjectIdKeySerializer());
 		DatabindCodec.mapper().registerModule(gitModule);
 
 		final SwearService service = new SwearService();
