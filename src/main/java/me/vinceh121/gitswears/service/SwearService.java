@@ -46,7 +46,7 @@ public class SwearService {
 	public static final MetricRegistry METRIC_REGISTRY = new MetricRegistry();
 	private static final Logger LOG = LoggerFactory.getLogger(SwearService.class);
 	private final Properties config = new Properties();
-	private final Collection<String> allowedHosts = Arrays.asList("github.com", "gitlab.com", "codeberg.org");
+	private final Collection<String> allowedHosts = Arrays.asList("github.com", "gitlab.com", "codeberg.org", "git.savannah.gnu.org");
 	private final Collection<String> swearList = new Vector<>();
 	private final Vertx vertx;
 	private final HttpServer server;
