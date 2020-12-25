@@ -55,7 +55,10 @@ public class GraphRequest extends GitRequest<BufferedImage> {
 			gen = new TotalSwearHistogram(counter);
 			break;
 		case "timeline":
-			gen = new TotalTimeLine(counter);
+			gen = new TotalTimeLine(counter, false);
+			break;
+		case "timelinecum":
+			gen = new TotalTimeLine(counter, true);
 			break;
 		default:
 			throw new RuntimeException("Invalid graph type");

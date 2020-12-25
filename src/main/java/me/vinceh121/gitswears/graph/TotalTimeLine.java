@@ -30,22 +30,16 @@ import me.vinceh121.gitswears.WordCount;
 public class TotalTimeLine extends GraphGenerator {
 	private TimeZone timeZone = TimeZone.getDefault();
 	private long total;
+	private boolean cumulative;
 
-	public TotalTimeLine(final SwearCounter counter) {
+	public TotalTimeLine(final SwearCounter counter, final boolean cumulative) {
 		super(counter);
 		this.width = 1024;
 		this.height = 500;
+		this.cumulative = cumulative;
 	}
 
-	@Override
-	public JFreeChart generateChart() {
-		final RevWalk revWalk = new RevWalk(this.getCounter().getRepo());
-
-		final TimeSeries serie = new TimeSeries("Total swear count");
-
-		final List<CommitCount> values = new ArrayList<>(this.getCounter().getMap().values());
-		Collections.reverse(values);
-
+	private void countCumulative(final TimeSeries serie, final List<CommitCount> values, final RevWalk revWalk) {
 		for (final CommitCount c : values) {
 			final RevCommit com = revWalk.lookupCommit(c.getCommitId().toObjectId());
 			try {
@@ -57,6 +51,35 @@ public class TotalTimeLine extends GraphGenerator {
 			final Date date = new Date(com.getCommitTime() * 1000L);
 			this.total += this.totalEffective(c);
 			serie.addOrUpdate(new Second(date), this.total);
+		}
+	}
+
+	private void countPoint(final TimeSeries serie, final List<CommitCount> values, final RevWalk revWalk) {
+		for (final CommitCount c : values) {
+			final RevCommit com = revWalk.lookupCommit(c.getCommitId().toObjectId());
+			try {
+				revWalk.parseHeaders(com);
+				revWalk.parseBody(com);
+			} catch (final IOException e) {
+				e.printStackTrace();
+			}
+			final Date date = new Date(com.getCommitTime() * 1000L);
+			serie.addOrUpdate(new Second(date), this.totalEffective(c));
+		}
+	}
+
+	@Override
+	public JFreeChart generateChart() {
+		final RevWalk revWalk = new RevWalk(this.getCounter().getRepo());
+
+		final TimeSeries serie = new TimeSeries("Total swear count");
+
+		final List<CommitCount> values = new ArrayList<>(this.getCounter().getMap().values());
+		Collections.reverse(values);
+		if (this.cumulative) {
+			this.countCumulative(serie, values, revWalk);
+		} else {
+			this.countPoint(serie, values, revWalk);
 		}
 		revWalk.close();
 
@@ -109,5 +132,9 @@ public class TotalTimeLine extends GraphGenerator {
 
 	public void setTimeZone(final TimeZone timeZone) {
 		this.timeZone = timeZone;
+	}
+
+	public boolean isCummulative() {
+		return this.cumulative;
 	}
 }
