@@ -86,7 +86,8 @@ public class TotalTimeLine extends GraphGenerator {
 		final TimeSeriesCollection dataset = new TimeSeriesCollection(serie);
 
 		final JFreeChart chart = ChartFactory.createTimeSeriesChart(this.title,
-				"Date (" + this.timeZone.getDisplayName() + ")", "Cumulative swear count per commit", dataset);
+				"Date (" + this.timeZone.getDisplayName() + ")",
+				this.cumulative ? "Cumulative swear count per commit" : "Swear count change per commit", dataset);
 
 		final XYPlot plot = (XYPlot) chart.getPlot();
 		plot.setBackgroundPaint(Color.LIGHT_GRAY);
