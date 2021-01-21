@@ -1,6 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>me.vinceh121</groupId>
 	<artifactId>git-swears</artifactId>
@@ -76,12 +74,12 @@
 					<artifactId>vertx-redis-client</artifactId>
 					<version>${vertx.version}</version>
 				</dependency>
+				<!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core -->
 				<dependency>
-					<groupId>ch.qos.logback</groupId>
-					<artifactId>logback-classic</artifactId>
-					<version>1.2.3</version>
+					<groupId>org.apache.logging.log4j</groupId>
+					<artifactId>log4j-core</artifactId>
+					<version>2.14.0</version>
 				</dependency>
-
 				<!-- https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-core -->
 				<dependency>
 					<groupId>io.dropwizard.metrics</groupId>
@@ -98,12 +96,6 @@
 				<dependency>
 					<groupId>io.dropwizard.metrics</groupId>
 					<artifactId>metrics-graphite</artifactId>
-					<version>4.1.13</version>
-				</dependency>
-				<!-- https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-logback -->
-				<dependency>
-					<groupId>io.dropwizard.metrics</groupId>
-					<artifactId>metrics-logback</artifactId>
 					<version>4.1.13</version>
 				</dependency>
 				<!-- https://mvnrepository.com/artifact/io.vertx/vertx-dropwizard-metrics -->
