@@ -1,5 +1,6 @@
 package me.vinceh121.gitswears.service.requests;
 
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.redis.client.Response;
@@ -19,10 +20,10 @@ public class JsonRequest extends GitRequest<JsonObject> {
 	}
 
 	@Override
-	protected JsonObject sendResult(final RoutingContext ctx, final SwearCounter counter) {
+	protected void sendResult(final RoutingContext ctx, final SwearCounter counter, final Promise<JsonObject> promise) {
 		final JsonObject obj = JsonObject.mapFrom(counter.generateSummary());
 		this.response(ctx, 201, obj);
-		return obj;
+		promise.complete(obj);
 	}
 
 	@Override

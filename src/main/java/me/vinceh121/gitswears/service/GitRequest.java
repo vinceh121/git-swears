@@ -28,6 +28,7 @@ import com.codahale.metrics.Timer;
 
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.redis.client.Response;
@@ -278,11 +279,11 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 
 	private Future<T> sendResult0(final RoutingContext ctx, final SwearCounter counter) {
 		return Future.future(promise -> {
-			promise.complete(this.sendResult(ctx, counter));
+			this.sendResult(ctx, counter, promise);
 		});
 	}
 
-	protected abstract T sendResult(final RoutingContext ctx, final SwearCounter counter);
+	protected abstract void sendResult(final RoutingContext ctx, final SwearCounter counter, final Promise<T> promise);
 
 	protected abstract String putInCache(final T result);
 
