@@ -26,10 +26,8 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.WorkerExecutor;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.redis.client.Response;
@@ -48,13 +46,11 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 			= SwearService.METRIC_REGISTRY.counter(MetricRegistry.name("git-swears", "service", "errors"));
 
 	private final SwearService swearService;
-	private final WorkerExecutor worker;
 	private final String requestName;
 
 	public GitRequest(final SwearService swearService, final String requestName) {
 		this.swearService = swearService;
 		this.requestName = requestName;
-		this.worker = this.swearService.getVertx().createSharedWorkerExecutor("job." + requestName);
 	}
 
 	@Override
@@ -110,7 +106,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 			if (cacheRes.succeeded()) {
 				if (!cacheRes.result().toString().equals(PROGRESS_VALUE)) {
 					LOG.info("[{}] cached response for job {}", clientId, jobName);
-					this.sendCached0(ctx, cacheRes.result(), null);
+					this.sendCached0(ctx, cacheRes.result());
 				} else {
 					LOG.info("[{}] in progress response for job {}", clientId, jobName);
 					this.response(ctx, 102, new JsonObject().put("message", "Request is in progress"));
@@ -122,51 +118,41 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 
 			LOG.info("[{}] requested job {}", clientId, jobName);
 
-			this.cloneRepo(uri, branch, repoId, cloneRes -> {
-				if (cloneRes.failed()) {
-					this.error(ctx, 503, "Clone failed", cloneRes.cause());
-					this.unmarkInProgress(jobName);
-					return;
-				}
+			this.cloneRepo(uri, branch, repoId).onFailure(t -> {
+				this.error(ctx, 503, "Clone failed", t);
+				this.unmarkInProgress(jobName);
+			}).onSuccess(git -> {
 				LOG.info("[{}] clone success for job {}", clientId, jobName);
-				this.checkSize(cloneRes.result(), branch, checkRes -> {
-					if (checkRes.failed()) {
-						this.error(ctx, 500, "Failed to pre-count commits", checkRes.cause());
-						this.unmarkInProgress(jobName);
-						this.deleteRepo(cloneRes.result().getRepository());
-						return;
-					}
-					if (checkRes.result()) {
+				this.checkSize(git, branch).onFailure(t -> {
+					this.error(ctx, 500, "Failed to pre-count commits", t);
+					this.unmarkInProgress(jobName);
+					this.deleteRepo(git.getRepository());
+				}).onSuccess(check -> {
+					if (check) {
 						this.error(ctx, 400, "Repository exceeds limit of " + COMMIT_LIMIT + " commits");
 						this.unmarkInProgress(jobName);
-						this.deleteRepo(cloneRes.result().getRepository());
+						this.deleteRepo(git.getRepository());
 						return;
 					}
 
-					this.countSwears(cloneRes.result().getRepository(), branch, includeMessages, countRes -> {
-						if (countRes.failed()) {
-							this.error(ctx, 500, "Git error while counting", countRes.cause());
-							this.unmarkInProgress(jobName);
-							this.deleteRepo(cloneRes.result().getRepository());
-							return;
-						}
-
-						final SwearCounter count = countRes.result();
+					this.countSwears(git.getRepository(), branch, includeMessages).onFailure(t -> {
+						this.error(ctx, 500, "Git error while counting", t);
+						this.unmarkInProgress(jobName);
+						this.deleteRepo(git.getRepository());
+					}).onSuccess(count -> {
 						LOG.info("[{}] count success for job {}", clientId, jobName);
 
-						this.sendResult0(ctx, count, sendRes -> {
-							if (sendRes.failed()) {
-								this.error(ctx, 400, "Error while sending result", sendRes.cause());
-								this.unmarkInProgress(jobName);
-								this.deleteRepo(cloneRes.result().getRepository());
-								return;
-							}
+						this.sendResult0(ctx, count).onFailure(t -> {
+							this.error(ctx, 400, "Error while sending result", t);
+							this.unmarkInProgress(jobName);
+							this.deleteRepo(git.getRepository());
 
+						}).onSuccess(res -> {
 							this.swearService.getRedisApi()
 									.setex(jobName, this.swearService.getConfig().getProperty("redis.cachetime"),
-											this.putInCache(sendRes.result()), redisRes -> {});
+											this.putInCache(res), redisRes -> {});
 
-							this.deleteRepo(cloneRes.result().getRepository());
+							this.deleteRepo(git.getRepository());
 						});
 					});
 				});
@@ -177,8 +163,8 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	/**
 	 * true when limit exceeded
 	 */
-	private void checkSize(final Git git, final String branch, final Handler<AsyncResult<Boolean>> handler) {
-		this.worker.executeBlocking(promise -> {
+	private Future<Boolean> checkSize(final Git git, final String branch) {
+		return Future.future(promise -> {
 			try {
 				long count = 0;
 				final Iterator<RevCommit> it = git.log().addPath("refs/heads/" + branch).call().iterator();
@@ -193,12 +179,11 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 			} catch (final GitAPIException e) {
 				promise.fail(e);
 			}
-		}, handler);
+		});
 	}
 
-	private void cloneRepo(final String uri, final String branch, final String repoId,
-			final Handler<AsyncResult<Git>> handler) {
-		this.worker.executeBlocking(promise -> {
+	private Future<Git> cloneRepo(final String uri, final String branch, final String repoId) {
+		return Future.future(promise -> {
 			final File out = Paths.get(this.swearService.getRootDir().toString(), repoId).toFile();
 			METRICS_CLONE_TIME.time(() -> {
 				if (out.exists()) {
@@ -222,12 +207,12 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 					promise.fail(e);
 				}
 			});
-		}, handler);
+		});
 	}
 
-	private void countSwears(final Repository repo, final String branch, final boolean includeMessages,
-			final Handler<AsyncResult<SwearCounter>> handler) {
-		this.worker.executeBlocking(promise -> {
+	private Future<SwearCounter> countSwears(final Repository repo, final String branch,
+			final boolean includeMessages) {
+		return Future.future(promise -> {
 			METRICS_COUNT_TIME.time(() -> {
 				final SwearCounter swearCounter = new SwearCounter(repo, this.swearService.getSwearList());
 				swearCounter.setMainRef(branch);
@@ -240,16 +225,26 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 				}
 				promise.complete(swearCounter);
 			});
-		}, handler);
+		});
 	}
 
-	private void deleteRepo(final Repository repo) {
-		if (repo instanceof FileRepository) {
-			final FileRepository fileRepo = (FileRepository) repo;
-			this.swearService.getVertx()
-					.fileSystem()
-					.deleteRecursive(fileRepo.getDirectory().getAbsolutePath(), true, null);
-		}
+	private Future<Void> deleteRepo(final Repository repo) {
+		return Future.future(promise -> {
+			if (repo instanceof FileRepository) {
+				final FileRepository fileRepo = (FileRepository) repo;
+				this.swearService.getVertx()
+						.fileSystem()
+						.deleteRecursive(fileRepo.getDirectory().getAbsolutePath(), true, v -> {
+							if (v.succeeded()) {
+								promise.complete();
+							} else {
+								promise.fail(v.cause());
+							}
+						});
+			} else {
+				promise.complete();
+			}
+		});
 	}
 
 	private void markInProgress(final String key) {
@@ -272,21 +267,19 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 		});
 	}
 
-	private void sendCached0(final RoutingContext ctx, final Response redisRes,
-			final Handler<AsyncResult<Void>> handler) {
-		this.worker.executeBlocking(promise -> {
+	private Future<Void> sendCached0(final RoutingContext ctx, final Response redisRes) {
+		return Future.future(promise -> {
 			this.sendCached(ctx, redisRes);
 			promise.complete();
-		}, handler);
+		});
 	}
 
 	protected abstract void sendCached(final RoutingContext ctx, final Response redisRes);
 
-	private void sendResult0(final RoutingContext ctx, final SwearCounter counter,
-			final Handler<AsyncResult<T>> handler) {
-		this.worker.executeBlocking(promise -> {
+	private Future<T> sendResult0(final RoutingContext ctx, final SwearCounter counter) {
+		return Future.future(promise -> {
 			promise.complete(this.sendResult(ctx, counter));
-		}, handler);
+		});
 	}
 
 	protected abstract T sendResult(final RoutingContext ctx, final SwearCounter counter);
