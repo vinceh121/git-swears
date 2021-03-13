@@ -52,7 +52,27 @@ public class GraphRequest extends GitRequest<BufferedImage> {
 			final Promise<BufferedImage> promise) {
 		final String type = ctx.request().getParam("type");
 
-		this.generateImage(counter, type, 0, 0).onSuccess(img -> {
+		final int width;
+		try {
+			width = Integer.parseInt(ctx.request().getParam("width"));
+			if (width > 1920)
+				throw new NumberFormatException();
+		} catch (final NumberFormatException e) {
+			this.error(ctx, 400, "Invalid width");
+			return;
+		}
+
+		final int height;
+		try {
+			height = Integer.parseInt(ctx.request().getParam("height"));
+			if (height > 1920)
+				throw new NumberFormatException();
+		} catch (final NumberFormatException e) {
+			this.error(ctx, 400, "Invalid height");
+			return;
+		}
+
+		this.generateImage(counter, type, width, height).onSuccess(img -> {
 			final ByteArrayOutputStream out = new ByteArrayOutputStream();
 			try {
 				ImageIO.write(img, "png", out);
