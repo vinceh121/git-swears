@@ -1,17 +1,47 @@
 package me.vinceh121.gitswears;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.Hashtable;
+import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class CommitCount extends Hashtable<String, WordCount> {
-	private static final long serialVersionUID = 5486389147758111103L;
+public class CommitCount {
+	@JsonProperty
+	private final Map<String, WordCount> words = new Hashtable<>();
 	@JsonProperty
 	private Date commitDate;
+	@JsonIgnore
 	private AbbreviatedObjectId commitId;
+
+	public WordCount getOrNew(final String word) {
+		final WordCount counter;
+		if (this.words.containsKey(word)) {
+			counter = this.words.get(word);
+		} else {
+			counter = new WordCount();
+			counter.setWord(word);
+			this.words.put(word, counter);
+		}
+		return counter;
+	}
+
+	public WordCount get(String word) {
+		return this.words.get(word);
+	}
+
+	public Collection<WordCount> counts() {
+		return words.values();
+	}
+
+	public Set<String> words() {
+		return words.keySet();
+	}
 
 	public AbbreviatedObjectId getCommitId() {
 		return this.commitId;
@@ -19,18 +49,6 @@ public class CommitCount extends Hashtable<String, WordCount> {
 
 	public void setCommitId(final AbbreviatedObjectId commitId) {
 		this.commitId = commitId;
-	}
-
-	public WordCount getOrNew(final String word) {
-		final WordCount counter;
-		if (this.containsKey(word)) {
-			counter = this.get(word);
-		} else {
-			counter = new WordCount();
-			counter.setWord(word);
-			this.put(word, counter);
-		}
-		return counter;
 	}
 
 	public Date getCommitDate() {

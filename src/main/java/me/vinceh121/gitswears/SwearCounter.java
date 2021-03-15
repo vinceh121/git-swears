@@ -176,7 +176,7 @@ public class SwearCounter {
 
 		for (final AbbreviatedObjectId oid : ids) {
 			final CommitCount count = this.map.get(oid);
-			for (final String word : count.keySet()) {
+			for (final String word : count.words()) {
 				final WordCount wCount = count.get(word);
 
 				final WordCount finCount;

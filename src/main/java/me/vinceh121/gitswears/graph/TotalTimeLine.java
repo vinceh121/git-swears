@@ -94,7 +94,7 @@ public class TotalTimeLine extends GraphGenerator {
 	 */
 	private long totalEffective(final CommitCount c) {
 		long value = 0;
-		for (final WordCount w : c.values()) {
+		for (final WordCount w : c.counts()) {
 			if (this.getSummary().isIncludeMessages()) {
 				value += w.getAdded() + w.getMessage();
 			} else {
