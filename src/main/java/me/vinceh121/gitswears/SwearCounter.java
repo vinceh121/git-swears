@@ -81,6 +81,11 @@ public class SwearCounter {
 			for (final DiffEntry e : this.git.diff().setNewTree(newTreeIter).setOldTree(oldTreeIter).call()) {
 				this.countDiff(e, AbbreviatedObjectId.fromObjectId(c.getId()));
 			}
+
+			final CommitCount count = this.map.get(AbbreviatedObjectId.fromObjectId(c.getId()));
+			if (count != null) {
+				count.setCommitDate(c.getCommitterIdent().getWhen());
+			}
 		}
 		revWalk.close();
 		this.countFinal();

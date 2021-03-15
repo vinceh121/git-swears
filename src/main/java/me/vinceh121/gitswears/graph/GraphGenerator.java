@@ -4,15 +4,15 @@ import java.awt.image.BufferedImage;
 
 import org.jfree.chart.JFreeChart;
 
-import me.vinceh121.gitswears.SwearCounter;
+import me.vinceh121.gitswears.CountSummary;
 
 public abstract class GraphGenerator {
-	private final SwearCounter counter;
+	private final CountSummary summary;
 	protected int width = 500, height = 400;
 	protected String title;
 
-	public GraphGenerator(final SwearCounter counter) {
-		this.counter = counter;
+	public GraphGenerator(final CountSummary summary) {
+		this.summary = summary;
 	}
 
 	public abstract JFreeChart generateChart();
@@ -47,7 +47,7 @@ public abstract class GraphGenerator {
 		this.title = title;
 	}
 
-	public SwearCounter getCounter() {
-		return this.counter;
+	public CountSummary getSummary() {
+		return summary;
 	}
 }

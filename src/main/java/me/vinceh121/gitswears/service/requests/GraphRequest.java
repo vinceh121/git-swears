@@ -15,6 +15,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.redis.client.Response;
+import me.vinceh121.gitswears.CountSummary;
 import me.vinceh121.gitswears.SwearCounter;
 import me.vinceh121.gitswears.graph.GraphGenerator;
 import me.vinceh121.gitswears.graph.TotalSwearHistogram;
@@ -109,16 +110,17 @@ public class GraphRequest extends GitRequest<BufferedImage> {
 	private Future<BufferedImage> generateImage(final SwearCounter counter, final String type, final int width,
 			final int height) {
 		return Future.future(promise -> {
+			final CountSummary sum = counter.generateSummary();
 			final GraphGenerator gen;
 			switch (type) {
 			case "histogram":
-				gen = new TotalSwearHistogram(counter);
+				gen = new TotalSwearHistogram(sum);
 				break;
 			case "timeline":
-				gen = new TotalTimeLine(counter, false);
+				gen = new TotalTimeLine(sum, false);
 				break;
 			case "timelinecum":
-				gen = new TotalTimeLine(counter, true);
+				gen = new TotalTimeLine(sum, true);
 				break;
 			default:
 				promise.fail(new IllegalArgumentException("Invalid graph type"));
