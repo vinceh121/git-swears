@@ -295,7 +295,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	}
 
 	public void error(final RoutingContext ctx, final int status, final String msg) {
-		this.error(ctx, status, msg, new Exception(msg));
+		this.error(ctx, status, msg, null);
 	}
 
 	public void error(final RoutingContext ctx, final int status, final String msg, final Throwable t) {
