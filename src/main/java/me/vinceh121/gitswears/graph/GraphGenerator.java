@@ -48,6 +48,6 @@ public abstract class GraphGenerator {
 	}
 
 	public CountSummary getSummary() {
-		return summary;
+		return this.summary;
 	}
 }

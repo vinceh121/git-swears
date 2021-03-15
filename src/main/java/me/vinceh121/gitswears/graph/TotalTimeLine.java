@@ -26,7 +26,7 @@ import me.vinceh121.gitswears.WordCount;
 public class TotalTimeLine extends GraphGenerator {
 	private TimeZone timeZone = TimeZone.getDefault();
 	private long total;
-	private boolean cumulative;
+	private final boolean cumulative;
 
 	public TotalTimeLine(final CountSummary counter, final boolean cumulative) {
 		super(counter);

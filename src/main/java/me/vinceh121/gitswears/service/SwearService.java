@@ -98,21 +98,21 @@ public class SwearService {
 			throw new RuntimeException("Failed to load vertx config", e);
 		}
 
-		this.vertx.exceptionHandler(t -> LOG.error("Unexpected Vert.x exception", t));
+		this.vertx.exceptionHandler(t -> SwearService.LOG.error("Unexpected Vert.x exception", t));
 
 		final Redis redis = Redis.createClient(this.vertx, this.config.getProperty("redis.constring"));
 		redis.connect(redisRes -> {
 			if (redisRes.failed()) {
-				LOG.error("Failed to connect to redis", redisRes.cause());
+				SwearService.LOG.error("Failed to connect to redis", redisRes.cause());
 			}
 		});
 		this.redisApi = RedisAPI.api(redis);
 
 		this.server = this.vertx.createHttpServer();
-		this.server.exceptionHandler(t -> LOG.error("Unexpected error in HTTP server", t));
+		this.server.exceptionHandler(t -> SwearService.LOG.error("Unexpected error in HTTP server", t));
 		this.router = Router.router(this.vertx);
 		this.router.errorHandler(500,
-				ctx -> LOG.error("Unexpected exception in route " + ctx.normalisedPath(), ctx.failure()));
+				ctx -> SwearService.LOG.error("Unexpected exception in route " + ctx.normalisedPath(), ctx.failure()));
 		this.server.requestHandler(this.router);
 
 		this.router.get("/count.json").handler(new JsonRequest(this));
@@ -121,9 +121,9 @@ public class SwearService {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			this.vertx.fileSystem().deleteRecursive(this.rootDir.toAbsolutePath().toString(), true, res -> {
 				if (res.failed()) {
-					LOG.error("Failed to delete temporary folder", res.cause());
+					SwearService.LOG.error("Failed to delete temporary folder", res.cause());
 				} else {
-					LOG.info("Deleted temporary folder");
+					SwearService.LOG.info("Deleted temporary folder");
 				}
 			});
 		}, "Temporary folder deletion"));
@@ -132,7 +132,7 @@ public class SwearService {
 	private void start() {
 		this.server.listen(Integer.parseInt(this.config.getProperty("http.port")),
 				this.config.getProperty("http.host"));
-		LOG.info("Started!");
+		SwearService.LOG.info("Started!");
 	}
 
 	private void initMetrics() {
@@ -143,13 +143,13 @@ public class SwearService {
 		final int port = Integer.parseInt(this.config.getProperty("metrics.port"));
 		final long period = Long.parseLong(this.config.getProperty("metrics.period"));
 
-		LOG.info("Starting metrics");
+		SwearService.LOG.info("Starting metrics");
 
-		METRIC_REGISTRY.registerAll("git-swears-gc", new GarbageCollectorMetricSet());
-		METRIC_REGISTRY.registerAll("git-swears-mem", new MemoryUsageGaugeSet());
+		SwearService.METRIC_REGISTRY.registerAll("git-swears-gc", new GarbageCollectorMetricSet());
+		SwearService.METRIC_REGISTRY.registerAll("git-swears-mem", new MemoryUsageGaugeSet());
 
 		final Graphite graphite = new Graphite(new InetSocketAddress(host, port));
-		final GraphiteReporter graphiteReporter = GraphiteReporter.forRegistry(METRIC_REGISTRY)
+		final GraphiteReporter graphiteReporter = GraphiteReporter.forRegistry(SwearService.METRIC_REGISTRY)
 				.prefixedWith("git-swears")
 				.convertRatesTo(TimeUnit.MILLISECONDS)
 				.convertDurationsTo(TimeUnit.MILLISECONDS)

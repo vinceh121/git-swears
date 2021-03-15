@@ -48,8 +48,9 @@ public class GraphRequest extends GitRequest<JsonObject> {
 		final int width;
 		try {
 			width = Integer.parseInt(ctx.request().getParam("width"));
-			if (width > 1920)
+			if (width > 1920) {
 				throw new NumberFormatException();
+			}
 		} catch (final NumberFormatException e) {
 			this.error(ctx, 400, "Invalid width");
 			return;
@@ -58,8 +59,9 @@ public class GraphRequest extends GitRequest<JsonObject> {
 		final int height;
 		try {
 			height = Integer.parseInt(ctx.request().getParam("height"));
-			if (height > 1920)
+			if (height > 1920) {
 				throw new NumberFormatException();
+			}
 		} catch (final NumberFormatException e) {
 			this.error(ctx, 400, "Invalid height");
 			return;
@@ -95,8 +97,9 @@ public class GraphRequest extends GitRequest<JsonObject> {
 		final int width;
 		try {
 			width = Integer.parseInt(ctx.request().getParam("width"));
-			if (width > 1920)
+			if (width > 1920) {
 				throw new NumberFormatException();
+			}
 		} catch (final NumberFormatException e) {
 			this.error(ctx, 400, "Invalid width");
 			return;
@@ -105,8 +108,9 @@ public class GraphRequest extends GitRequest<JsonObject> {
 		final int height;
 		try {
 			height = Integer.parseInt(ctx.request().getParam("height"));
-			if (height > 1920)
+			if (height > 1920) {
 				throw new NumberFormatException();
+			}
 		} catch (final NumberFormatException e) {
 			this.error(ctx, 400, "Invalid height");
 			return;

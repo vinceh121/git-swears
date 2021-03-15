@@ -64,7 +64,7 @@ public class SwearCommandLine {
 
 		final CommandLineParser parse = new DefaultParser();
 		try {
-			this.cli = parse.parse(CLI_OPTIONS, args);
+			this.cli = parse.parse(SwearCommandLine.CLI_OPTIONS, args);
 		} catch (final org.apache.commons.cli.ParseException e) {
 			e.printStackTrace();
 			System.exit(-1);
@@ -110,7 +110,7 @@ public class SwearCommandLine {
 
 	private void outputImg() throws Exception {
 		final String imgFormat = this.cli.hasOption('i') ? this.cli.getOptionValue('i') : "png";
-		final GraphGenerator graph = GRAPH_TYPES.get(this.cli.getOptionValue('g'))
+		final GraphGenerator graph = SwearCommandLine.GRAPH_TYPES.get(this.cli.getOptionValue('g'))
 				.getConstructor(SwearCounter.class)
 				.newInstance(this.count);
 
@@ -152,7 +152,7 @@ public class SwearCommandLine {
 
 		if (this.cli.hasOption('a')) {
 			System.err.println("Available graph types:");
-			for (final String g : GRAPH_TYPES.keySet()) {
+			for (final String g : SwearCommandLine.GRAPH_TYPES.keySet()) {
 				System.out.println(g);
 			}
 			System.exit(0);
@@ -171,25 +171,25 @@ public class SwearCommandLine {
 
 	public void printHelp() {
 		final HelpFormatter fmt = new HelpFormatter();
-		fmt.printHelp("git-swears", CLI_OPTIONS);
+		fmt.printHelp("git-swears", SwearCommandLine.CLI_OPTIONS);
 	}
 
 	static {
-		CLI_OPTIONS.addOption("r", "repo", true, "Path to the git repository");
-		CLI_OPTIONS.addOption("b", "branch", true, "Git branch to count in");
+		SwearCommandLine.CLI_OPTIONS.addOption("r", "repo", true, "Path to the git repository");
+		SwearCommandLine.CLI_OPTIONS.addOption("b", "branch", true, "Git branch to count in");
 
-		CLI_OPTIONS.addOption("s", "swears", true,
+		SwearCommandLine.CLI_OPTIONS.addOption("s", "swears", true,
 				"Swear list. Either a comma-separated list, or fully qualified URL to a newline-separated list");
 
-		CLI_OPTIONS.addOption("g", "graph", true, "Outputs a graph");
-		CLI_OPTIONS.addOption("a", "list-graphs", false, "Lists available graph types");
+		SwearCommandLine.CLI_OPTIONS.addOption("g", "graph", true, "Outputs a graph");
+		SwearCommandLine.CLI_OPTIONS.addOption("a", "list-graphs", false, "Lists available graph types");
 
-		CLI_OPTIONS.addOption("i", "image-type", true, "Image type");
-		CLI_OPTIONS.addOption("t", "list-image-types", false, "Image type");
+		SwearCommandLine.CLI_OPTIONS.addOption("i", "image-type", true, "Image type");
+		SwearCommandLine.CLI_OPTIONS.addOption("t", "list-image-types", false, "Image type");
 	}
 
 	static {
-		GRAPH_TYPES.put("histogram", TotalSwearHistogram.class);
-		GRAPH_TYPES.put("timeline", TotalTimeLine.class);
+		SwearCommandLine.GRAPH_TYPES.put("histogram", TotalSwearHistogram.class);
+		SwearCommandLine.GRAPH_TYPES.put("timeline", TotalTimeLine.class);
 	}
 }

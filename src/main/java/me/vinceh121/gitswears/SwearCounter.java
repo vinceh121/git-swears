@@ -92,7 +92,7 @@ public class SwearCounter {
 	}
 
 	private void countMessage(final RevCommit commit) {
-		final Matcher matcher = WORD_PATTERN.matcher(commit.getFullMessage());
+		final Matcher matcher = SwearCounter.WORD_PATTERN.matcher(commit.getFullMessage());
 		while (matcher.find()) {
 			final String word = matcher.group().toLowerCase().trim();
 			if (this.swears.contains(word)) {
@@ -111,7 +111,7 @@ public class SwearCounter {
 		switch (e.getChangeType()) {
 		case MODIFY:
 		case ADD:
-			final Matcher newMatcher = WORD_PATTERN.matcher(newTxt);
+			final Matcher newMatcher = SwearCounter.WORD_PATTERN.matcher(newTxt);
 			while (newMatcher.find()) {
 				final String word = newMatcher.group().toLowerCase().trim();
 				if (this.swears.contains(word)) {
@@ -122,7 +122,7 @@ public class SwearCounter {
 				break;
 			}
 		case DELETE:
-			final Matcher oldMatcher = WORD_PATTERN.matcher(oldTxt);
+			final Matcher oldMatcher = SwearCounter.WORD_PATTERN.matcher(oldTxt);
 			while (oldMatcher.find()) {
 				final String word = oldMatcher.group().toLowerCase().trim();
 				if (this.swears.contains(word)) {

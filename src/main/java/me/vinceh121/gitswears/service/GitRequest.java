@@ -63,7 +63,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 		final String uri = ctx.request().getParam("uri");
 		if (uri == null) {
 			this.error(ctx, 400, "uri not specified");
-			LOG.warn("[{}] uri not specified", clientId);
+			GitRequest.LOG.warn("[{}] uri not specified", clientId);
 			return;
 		}
 
@@ -105,11 +105,11 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 
 		this.fetchCached(jobName).onComplete(cacheRes -> {
 			if (cacheRes.succeeded()) {
-				if (!cacheRes.result().toString().equals(PROGRESS_VALUE)) {
-					LOG.info("[{}] cached response for job {}", clientId, jobName);
+				if (!cacheRes.result().toString().equals(GitRequest.PROGRESS_VALUE)) {
+					GitRequest.LOG.info("[{}] cached response for job {}", clientId, jobName);
 					this.sendCached0(ctx, cacheRes.result());
 				} else {
-					LOG.info("[{}] in progress response for job {}", clientId, jobName);
+					GitRequest.LOG.info("[{}] in progress response for job {}", clientId, jobName);
 					this.response(ctx, 102, new JsonObject().put("message", "Request is in progress"));
 				}
 				return;
@@ -117,20 +117,20 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 
 			this.markInProgress(jobName);
 
-			LOG.info("[{}] requested job {}", clientId, jobName);
+			GitRequest.LOG.info("[{}] requested job {}", clientId, jobName);
 
 			this.cloneRepo(uri, branch, repoId).onFailure(t -> {
 				this.error(ctx, 503, "Clone failed", t);
 				this.unmarkInProgress(jobName);
 			}).onSuccess(git -> {
-				LOG.info("[{}] clone success for job {}", clientId, jobName);
+				GitRequest.LOG.info("[{}] clone success for job {}", clientId, jobName);
 				this.checkSize(git, branch).onFailure(t -> {
 					this.error(ctx, 500, "Failed to pre-count commits", t);
 					this.unmarkInProgress(jobName);
 					this.deleteRepo(git.getRepository());
 				}).onSuccess(check -> {
 					if (check) {
-						this.error(ctx, 400, "Repository exceeds limit of " + COMMIT_LIMIT + " commits");
+						this.error(ctx, 400, "Repository exceeds limit of " + GitRequest.COMMIT_LIMIT + " commits");
 						this.unmarkInProgress(jobName);
 						this.deleteRepo(git.getRepository());
 						return;
@@ -141,7 +141,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 						this.unmarkInProgress(jobName);
 						this.deleteRepo(git.getRepository());
 					}).onSuccess(count -> {
-						LOG.info("[{}] count success for job {}", clientId, jobName);
+						GitRequest.LOG.info("[{}] count success for job {}", clientId, jobName);
 
 						this.sendResult0(ctx, count).onFailure(t -> {
 							this.error(ctx, 400, "Error while sending result", t);
@@ -172,11 +172,11 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 				while (it.hasNext()) {
 					count++;
 					it.next();
-					if (count > COMMIT_LIMIT) {
+					if (count > GitRequest.COMMIT_LIMIT) {
 						break;
 					}
 				}
-				promise.complete(count > COMMIT_LIMIT);
+				promise.complete(count > GitRequest.COMMIT_LIMIT);
 			} catch (final GitAPIException e) {
 				promise.fail(e);
 			}
@@ -186,7 +186,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	private Future<Git> cloneRepo(final String uri, final String branch, final String repoId) {
 		return Future.future(promise -> {
 			final File out = Paths.get(this.swearService.getRootDir().toString(), repoId).toFile();
-			METRICS_CLONE_TIME.time(() -> {
+			GitRequest.METRICS_CLONE_TIME.time(() -> {
 				if (out.exists()) {
 					try {
 						promise.complete(Git.open(out));
@@ -214,7 +214,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	private Future<SwearCounter> countSwears(final Repository repo, final String branch,
 			final boolean includeMessages) {
 		return Future.future(promise -> {
-			METRICS_COUNT_TIME.time(() -> {
+			GitRequest.METRICS_COUNT_TIME.time(() -> {
 				final SwearCounter swearCounter = new SwearCounter(repo, this.swearService.getSwearList());
 				swearCounter.setMainRef(branch);
 				swearCounter.setIncludeMessages(includeMessages);
@@ -249,7 +249,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	}
 
 	private void markInProgress(final String key) {
-		this.swearService.getRedisApi().set(Arrays.asList(key, PROGRESS_VALUE), hndl -> {});
+		this.swearService.getRedisApi().set(Arrays.asList(key, GitRequest.PROGRESS_VALUE), hndl -> {});
 	}
 
 	private void unmarkInProgress(final String key) {
@@ -301,8 +301,8 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	public void error(final RoutingContext ctx, final int status, final String msg, final Throwable t) {
 		this.response(ctx, status,
 				new JsonObject().put("error", t == null ? null : t.getMessage()).put("message", msg));
-		LOG.error("[" + ctx.get("clientId") + "] error sending result: " + msg, t);
-		METRICS_ERROR.inc();
+		GitRequest.LOG.error("[" + ctx.get("clientId") + "] error sending result: " + msg, t);
+		GitRequest.METRICS_ERROR.inc();
 	}
 
 	public void response(final RoutingContext ctx, final int status, final JsonObject content) {

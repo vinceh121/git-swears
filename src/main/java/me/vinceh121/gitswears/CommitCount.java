@@ -31,16 +31,16 @@ public class CommitCount {
 		return counter;
 	}
 
-	public WordCount get(String word) {
+	public WordCount get(final String word) {
 		return this.words.get(word);
 	}
 
 	public Collection<WordCount> counts() {
-		return words.values();
+		return this.words.values();
 	}
 
 	public Set<String> words() {
-		return words.keySet();
+		return this.words.keySet();
 	}
 
 	public AbbreviatedObjectId getCommitId() {
@@ -52,7 +52,7 @@ public class CommitCount {
 	}
 
 	public Date getCommitDate() {
-		return commitDate;
+		return this.commitDate;
 	}
 
 	public void setCommitDate(final Date commitDate) {

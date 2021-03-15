@@ -20,7 +20,7 @@ public class TotalSwearHistogram extends GraphGenerator {
 	}
 
 	private long getEffectiveValue(final WordCount count) {
-		return this.getSummary().isIncludeMessages() ? (count.getMessage() + count.getAdded()) - count.getRemoved()
+		return this.getSummary().isIncludeMessages() ? count.getMessage() + count.getAdded() - count.getRemoved()
 				: count.getAdded() - count.getRemoved();
 	}
 
@@ -28,12 +28,12 @@ public class TotalSwearHistogram extends GraphGenerator {
 	public JFreeChart generateChart() {
 		final DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 		final List<WordCount> values = new ArrayList<>(this.getSummary().getHistogram().values());
-		Collections.sort(values, (w1, w2) -> -Long.compare(getEffectiveValue(w1), getEffectiveValue(w2)));
+		Collections.sort(values, (w1, w2) -> -Long.compare(this.getEffectiveValue(w1), this.getEffectiveValue(w2)));
 		for (final WordCount count : values) {
 			try {
-				dataset.incrementValue(getEffectiveValue(count), count.getWord(), "");
+				dataset.incrementValue(this.getEffectiveValue(count), count.getWord(), "");
 			} catch (final UnknownKeyException e) {
-				dataset.setValue(getEffectiveValue(count), count.getWord(), "");
+				dataset.setValue(this.getEffectiveValue(count), count.getWord(), "");
 			}
 		}
 		final JFreeChart chart = ChartFactory.createBarChart(this.title, "Swears",
