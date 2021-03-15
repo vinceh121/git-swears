@@ -46,7 +46,8 @@ public class SwearService {
 	public static final MetricRegistry METRIC_REGISTRY = new MetricRegistry();
 	private static final Logger LOG = LoggerFactory.getLogger(SwearService.class);
 	private final Properties config = new Properties();
-	private final Collection<String> allowedHosts = Arrays.asList("github.com", "gitlab.com", "codeberg.org", "git.savannah.gnu.org");
+	private final Collection<String> allowedHosts
+			= Arrays.asList("github.com", "gitlab.com", "codeberg.org", "git.savannah.gnu.org");
 	private final Collection<String> swearList = new Vector<>();
 	private final Vertx vertx;
 	private final HttpServer server;
@@ -108,6 +109,7 @@ public class SwearService {
 		this.redisApi = RedisAPI.api(redis);
 
 		this.server = this.vertx.createHttpServer();
+		this.server.exceptionHandler(t -> LOG.error("Unexpected error in HTTP server", t));
 		this.router = Router.router(this.vertx);
 		this.router.errorHandler(500,
 				ctx -> LOG.error("Unexpected exception in route " + ctx.normalisedPath(), ctx.failure()));

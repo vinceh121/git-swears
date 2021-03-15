@@ -299,7 +299,8 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	}
 
 	public void error(final RoutingContext ctx, final int status, final String msg, final Throwable t) {
-		this.response(ctx, status, new JsonObject().put("error", t.getMessage()).put("message", msg));
+		this.response(ctx, status,
+				new JsonObject().put("error", t == null ? null : t.getMessage()).put("message", msg));
 		LOG.error("[" + ctx.get("clientId") + "] error sending result: " + msg, t);
 		METRICS_ERROR.inc();
 	}

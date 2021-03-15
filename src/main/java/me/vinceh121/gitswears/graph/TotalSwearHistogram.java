@@ -1,5 +1,9 @@
 package me.vinceh121.gitswears.graph;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.UnknownKeyException;
@@ -15,14 +19,21 @@ public class TotalSwearHistogram extends GraphGenerator {
 		this.height = 500;
 	}
 
+	private long getEffectiveValue(final WordCount count) {
+		return this.getSummary().isIncludeMessages() ? (count.getMessage() + count.getAdded()) - count.getRemoved()
+				: count.getAdded() - count.getRemoved();
+	}
+
 	@Override
 	public JFreeChart generateChart() {
 		final DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-		for (final WordCount count : this.getSummary().getHistogram().values()) {
+		final List<WordCount> values = new ArrayList<>(this.getSummary().getHistogram().values());
+		Collections.sort(values, (w1, w2) -> -Long.compare(getEffectiveValue(w1), getEffectiveValue(w2)));
+		for (final WordCount count : values) {
 			try {
-				dataset.incrementValue(count.getEffectiveCount(), count.getWord(), "");
+				dataset.incrementValue(getEffectiveValue(count), count.getWord(), "");
 			} catch (final UnknownKeyException e) {
-				dataset.setValue(count.getEffectiveCount(), count.getWord(), "");
+				dataset.setValue(getEffectiveValue(count), count.getWord(), "");
 			}
 		}
 		final JFreeChart chart = ChartFactory.createBarChart(this.title, "Swears",
