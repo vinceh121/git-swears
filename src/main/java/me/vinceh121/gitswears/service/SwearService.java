@@ -1,5 +1,9 @@
 package me.vinceh121.gitswears.service;
 
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Paint;
+import java.awt.Stroke;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileReader;
@@ -15,6 +19,10 @@ import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartTheme;
+import org.jfree.chart.StandardChartTheme;
+import org.jfree.chart.plot.DefaultDrawingSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +63,47 @@ public class SwearService {
 	private final Path rootDir;
 	private final RedisAPI redisApi;
 
+	public static ChartTheme createMaterialTheme() {
+		final Color[] c = new Color[] { new Color(0x263238), new Color(0xff9800), new Color(0x8bc34a),
+				new Color(0xffc107), new Color(0x03a9f4), new Color(0xe91e63), new Color(0x009688), new Color(0xcfd8dc),
+				new Color(0x37474f), new Color(0xffa74d), new Color(0x9ccc65), new Color(0xffa000), new Color(0x81d4fa),
+				new Color(0xad1457), new Color(0x26a69a), new Color(0xeceff1), };
+		final Color foreground = c[15];
+		final Color background = c[0];
+
+		final StandardChartTheme theme = new StandardChartTheme("Material", true);
+		theme.setTitlePaint(foreground);
+		theme.setSubtitlePaint(foreground);
+		theme.setLegendItemPaint(foreground);
+		theme.setBaselinePaint(foreground);
+		theme.setLabelLinkPaint(foreground);
+		theme.setTickLabelPaint(foreground);
+		theme.setAxisLabelPaint(foreground);
+		theme.setItemLabelPaint(foreground);
+		theme.setLegendBackgroundPaint(background);
+		theme.setChartBackgroundPaint(background);
+		theme.setPlotBackgroundPaint(background);
+		theme.setPlotOutlinePaint(c[8]);
+		theme.setCrosshairPaint(c[5]);
+		theme.setShadowPaint(c[8]);
+		theme.setErrorIndicatorPaint(c[13]);
+		theme.setGridBandPaint(foreground);
+		theme.setGridBandAlternatePaint(foreground);
+		theme.setDrawingSupplier(new DefaultDrawingSupplier(new Paint[] {
+				// c[0],
+				c[1], c[2], c[3], c[4], c[5], c[6],
+				// c[7],
+				// c[8],
+				c[9], c[10], c[11], c[12], c[13], c[14],
+				// c[15],
+		}, new Paint[] { c[3], c[5] }, new Stroke[] { new BasicStroke(2.0f) }, new Stroke[] { new BasicStroke(0.5f) },
+				DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE));
+		return theme;
+	}
+
 	public static void main(final String[] args) {
+		ChartFactory.setChartTheme(SwearService.createMaterialTheme());
+
 		final SimpleModule gitModule = new SimpleModule();
 		gitModule.addSerializer(AbbreviatedObjectId.class, new AbbreviatedObjectIdSerializer());
 		gitModule.addDeserializer(AbbreviatedObjectId.class, new AbbreviatedObjectIdDeserializer());

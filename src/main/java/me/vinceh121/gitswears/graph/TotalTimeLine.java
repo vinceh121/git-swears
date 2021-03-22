@@ -1,6 +1,5 @@
 package me.vinceh121.gitswears.graph;
 
-import java.awt.Color;
 import java.awt.geom.Line2D;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -67,9 +66,6 @@ public class TotalTimeLine extends GraphGenerator {
 				this.cumulative ? "Cumulative swear count per commit" : "Swear count change per commit", dataset);
 
 		final XYPlot plot = (XYPlot) chart.getPlot();
-		plot.setBackgroundPaint(Color.LIGHT_GRAY);
-		plot.setDomainGridlinePaint(Color.WHITE);
-		plot.setRangeGridlinePaint(Color.WHITE);
 		plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
 		plot.setDomainCrosshairVisible(true);
 		plot.setRangeCrosshairVisible(true);
