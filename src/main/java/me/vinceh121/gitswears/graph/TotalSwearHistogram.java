@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.renderer.category.BarRenderer;
+import org.jfree.chart.renderer.category.StandardBarPainter;
 import org.jfree.data.UnknownKeyException;
 import org.jfree.data.category.DefaultCategoryDataset;
 
@@ -38,6 +40,8 @@ public class TotalSwearHistogram extends GraphGenerator {
 		}
 		final JFreeChart chart = ChartFactory.createBarChart(this.title, "Swears",
 				"Total count (in code and commit messages)", dataset);
+		// To get f l a t look
+		((BarRenderer) chart.getCategoryPlot().getRenderer()).setBarPainter(new StandardBarPainter());
 		chart.getCategoryPlot().getRangeAxis().setMinorTickMarksVisible(false);
 		return chart;
 	}
