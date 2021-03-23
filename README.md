@@ -7,7 +7,7 @@ Counts swear words over time in a git repository. Available as a standalone exec
 ## Examples
 
 Cummulative timeline of Powercord:
-![Swear count timeline of Powercord](https://swear.vinceh121.me/count.png?width=1024&height=500&type=timelinecum&branch=v2-dev&type=histogram&uri=https://github.com/powercord-org/powercord)
+![Swear count timeline of Powercord](https://swear.vinceh121.me/count.png?width=1024&height=500&type=timelinecum&branch=v2-dev&uri=https://github.com/powercord-org/powercord)
 
 Histogram word count of South Park episode descriptions:
 ![Swear count histogram of South Park episode descriptions](https://swear.vinceh121.me/count.png?width=600&height=500&uri=https://github.com/wargio/plugin.video.southpark_unofficial&type=histogram&branch=addon-data)
