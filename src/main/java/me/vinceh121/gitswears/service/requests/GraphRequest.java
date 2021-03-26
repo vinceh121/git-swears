@@ -36,33 +36,9 @@ public class GraphRequest extends GitRequest<JsonObject> {
 
 	@Override
 	protected void sendCached(final RoutingContext ctx, final Response redisRes) { // TODO clean up this huge dupe code
-		final String type = ctx.request().getParam("type");
-
-		final int width;
-		try {
-			width = Integer.parseInt(ctx.request().getParam("width"));
-			if (width > 1920) {
-				throw new NumberFormatException();
-			}
-		} catch (final NumberFormatException e) {
-			this.error(ctx, 400, "Invalid width");
-			return;
-		}
-
-		final int height;
-		try {
-			height = Integer.parseInt(ctx.request().getParam("height"));
-			if (height > 1920) {
-				throw new NumberFormatException();
-			}
-		} catch (final NumberFormatException e) {
-			this.error(ctx, 400, "Invalid height");
-			return;
-		}
-
 		final CountSummary sum = new JsonObject(redisRes.toString()).mapTo(CountSummary.class);
 
-		this.generateImage(sum, type, width, height).onSuccess(img -> {
+		this.handleRequest(sum, ctx).onSuccess(img -> {
 			final ByteArrayOutputStream out = new ByteArrayOutputStream();
 			try {
 				ImageIO.write(img, "png", out);
@@ -85,33 +61,9 @@ public class GraphRequest extends GitRequest<JsonObject> {
 
 	@Override
 	protected void sendResult(final RoutingContext ctx, final SwearCounter counter, final Promise<JsonObject> promise) {
-		final String type = ctx.request().getParam("type");
-
-		final int width;
-		try {
-			width = Integer.parseInt(ctx.request().getParam("width"));
-			if (width > 1920) {
-				throw new NumberFormatException();
-			}
-		} catch (final NumberFormatException e) {
-			this.error(ctx, 400, "Invalid width");
-			return;
-		}
-
-		final int height;
-		try {
-			height = Integer.parseInt(ctx.request().getParam("height"));
-			if (height > 1920) {
-				throw new NumberFormatException();
-			}
-		} catch (final NumberFormatException e) {
-			this.error(ctx, 400, "Invalid height");
-			return;
-		}
-
 		final CountSummary sum = counter.generateSummary();
 
-		this.generateImage(sum, type, width, height).onSuccess(img -> {
+		this.handleRequest(sum, ctx).onSuccess(img -> {
 			final ByteArrayOutputStream out = new ByteArrayOutputStream();
 			try {
 				ImageIO.write(img, "png", out);
@@ -136,6 +88,32 @@ public class GraphRequest extends GitRequest<JsonObject> {
 	@Override
 	protected String putInCache(final JsonObject img) {
 		return img.encode();
+	}
+
+	private Future<BufferedImage> handleRequest(final CountSummary sum, final RoutingContext ctx) {
+		final String type = ctx.request().getParam("type");
+
+		final int width;
+		try {
+			width = Integer.parseInt(ctx.request().getParam("width"));
+			if (width > 1920) {
+				throw new NumberFormatException();
+			}
+		} catch (final NumberFormatException e) {
+			return Future.failedFuture(new IllegalArgumentException("Invalid width"));
+		}
+
+		final int height;
+		try {
+			height = Integer.parseInt(ctx.request().getParam("height"));
+			if (height > 1920) {
+				throw new NumberFormatException();
+			}
+		} catch (final NumberFormatException e) {
+			return Future.failedFuture(new IllegalArgumentException("Invalid height"));
+		}
+
+		return this.generateImage(sum, type, width, height);
 	}
 
 	private Future<BufferedImage> generateImage(final CountSummary sum, final String type, final int width,
