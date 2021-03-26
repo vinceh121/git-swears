@@ -3,8 +3,6 @@ package me.vinceh121.gitswears.service.requests;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -34,11 +32,6 @@ public class GraphRequest extends GitRequest<JsonObject> {
 		if (type == null) {
 			throw new RuntimeException("missing field type");
 		}
-	}
-
-	@Override
-	protected List<String> getExtraJobKey(final RoutingContext ctx) {
-		return Arrays.asList(ctx.request().getParam("type"));
 	}
 
 	@Override
