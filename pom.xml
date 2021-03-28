@@ -110,12 +110,6 @@
 					<artifactId>vertx-dropwizard-metrics</artifactId>
 					<version>${vertx.version}</version>
 				</dependency>
-				<!-- https://mvnrepository.com/artifact/org.jfree/org.jfree.svg -->
-				<dependency>
-					<groupId>org.jfree</groupId>
-					<artifactId>org.jfree.svg</artifactId>
-					<version>4.2</version>
-				</dependency>
 			</dependencies>
 		</profile>
 	</profiles>
@@ -130,6 +124,12 @@
 			<groupId>org.jfree</groupId>
 			<artifactId>jfreechart</artifactId>
 			<version>1.5.0</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.jfree/org.jfree.svg -->
+		<dependency>
+			<groupId>org.jfree</groupId>
+			<artifactId>org.jfree.svg</artifactId>
+			<version>4.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
