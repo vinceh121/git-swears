@@ -98,7 +98,7 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 		}
 
 		final List<String> jobElements
-				= new ArrayList<>(Arrays.asList(this.requestName, repoId, branch, String.valueOf(includeMessages)));
+				= new ArrayList<>(Arrays.asList(repoId, branch, String.valueOf(includeMessages)));
 		jobElements.addAll(this.getExtraJobKey(ctx));
 
 		final String jobName = String.join(".", jobElements);

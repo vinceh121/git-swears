@@ -1,6 +1,5 @@
 package me.vinceh121.gitswears.service.requests;
 
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
@@ -21,9 +20,11 @@ import me.vinceh121.gitswears.service.GitRequest;
 import me.vinceh121.gitswears.service.SwearService;
 
 public class GraphRequest extends GitRequest<JsonObject> {
+	private final boolean svg;
 
-	public GraphRequest(final SwearService swearService) {
+	public GraphRequest(final SwearService swearService, final boolean svg) {
 		super(swearService, "graph");
+		this.svg = svg;
 	}
 
 	@Override
@@ -35,54 +36,16 @@ public class GraphRequest extends GitRequest<JsonObject> {
 	}
 
 	@Override
-	protected void sendCached(final RoutingContext ctx, final Response redisRes) { // TODO clean up this huge dupe code
+	protected void sendCached(final RoutingContext ctx, final Response redisRes) {
 		final CountSummary sum = new JsonObject(redisRes.toString()).mapTo(CountSummary.class);
-
-		this.handleRequest(sum, ctx).onSuccess(img -> {
-			final ByteArrayOutputStream out = new ByteArrayOutputStream();
-			try {
-				ImageIO.write(img, "png", out);
-				out.flush();
-			} catch (final IOException e) {
-				throw new RuntimeException(e);
-			}
-			ctx.response().putHeader("Content-Type", "image/png");
-			ctx.response().end(Buffer.buffer(out.toByteArray()));
-		}).onFailure(t -> {
-			final int status;
-			if (t instanceof IllegalArgumentException) {
-				status = 400;
-			} else {
-				status = 500;
-			}
-			this.error(ctx, status, t.getMessage(), t);
-		});
+		this.sendResponse(sum, ctx, 200);
 	}
 
 	@Override
 	protected void sendResult(final RoutingContext ctx, final SwearCounter counter, final Promise<JsonObject> promise) {
 		final CountSummary sum = counter.generateSummary();
-
-		this.handleRequest(sum, ctx).onSuccess(img -> {
-			final ByteArrayOutputStream out = new ByteArrayOutputStream();
-			try {
-				ImageIO.write(img, "png", out);
-				out.flush();
-			} catch (final IOException e) {
-				throw new RuntimeException(e);
-			}
-			ctx.response().putHeader("Content-Type", "image/png");
-			ctx.response().setStatusCode(201).end(Buffer.buffer(out.toByteArray()));
-			promise.complete(JsonObject.mapFrom(sum));
-		}).onFailure(t -> {
-			final int status;
-			if (t instanceof IllegalArgumentException) {
-				status = 400;
-			} else {
-				status = 500;
-			}
-			this.error(ctx, status, t.getMessage(), t);
-		});
+		this.sendResponse(sum, ctx, 201);
+		promise.complete(JsonObject.mapFrom(sum));
 	}
 
 	@Override
@@ -90,7 +53,35 @@ public class GraphRequest extends GitRequest<JsonObject> {
 		return img.encode();
 	}
 
-	private Future<BufferedImage> handleRequest(final CountSummary sum, final RoutingContext ctx) {
+	private void sendResponse(final CountSummary sum, final RoutingContext ctx, final int resStatus) {
+		this.handleRequest(sum, ctx).onSuccess(gen -> {
+			if (this.svg) {
+				final String svgContent = gen.generateSvg().getSVGDocument();
+				ctx.response().putHeader("Content-Type", "image/svg+xml");
+				ctx.response().setStatusCode(resStatus).end(svgContent);
+			} else {
+				final ByteArrayOutputStream out = new ByteArrayOutputStream();
+				try {
+					ImageIO.write(gen.generateImage(), "png", out);
+					out.flush();
+				} catch (final IOException e) {
+					throw new RuntimeException(e);
+				}
+				ctx.response().putHeader("Content-Type", "image/png");
+				ctx.response().setStatusCode(resStatus).end(Buffer.buffer(out.toByteArray()));
+			}
+		}).onFailure(t -> {
+			final int status;
+			if (t instanceof IllegalArgumentException) {
+				status = 400;
+			} else {
+				status = 500;
+			}
+			this.error(ctx, status, t.getMessage(), t);
+		});
+	}
+
+	private Future<GraphGenerator> handleRequest(final CountSummary sum, final RoutingContext ctx) {
 		final String type = ctx.request().getParam("type");
 
 		final int width;
@@ -116,7 +107,7 @@ public class GraphRequest extends GitRequest<JsonObject> {
 		return this.generateImage(sum, type, width, height);
 	}
 
-	private Future<BufferedImage> generateImage(final CountSummary sum, final String type, final int width,
+	private Future<GraphGenerator> generateImage(final CountSummary sum, final String type, final int width,
 			final int height) {
 		return Future.future(promise -> {
 			final GraphGenerator gen;
@@ -138,7 +129,7 @@ public class GraphRequest extends GitRequest<JsonObject> {
 			gen.setWidth(width);
 			gen.setHeight(height);
 
-			promise.complete(gen.generateImage());
+			promise.complete(gen);
 		});
 	}
 

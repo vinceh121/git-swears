@@ -164,7 +164,8 @@ public class SwearService {
 		this.server.requestHandler(this.router);
 
 		this.router.get("/count.json").handler(new JsonRequest(this));
-		this.router.get("/count.png").handler(new GraphRequest(this));
+		this.router.get("/count.png").handler(new GraphRequest(this, false));
+		this.router.get("/count.svg").handler(new GraphRequest(this, true));
 
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			this.vertx.fileSystem().deleteRecursive(this.rootDir.toAbsolutePath().toString(), true, res -> {
@@ -178,9 +179,14 @@ public class SwearService {
 	}
 
 	private void start() {
-		this.server.listen(Integer.parseInt(this.config.getProperty("http.port")),
-				this.config.getProperty("http.host"));
-		SwearService.LOG.info("Started!");
+		this.server.listen(Integer.parseInt(this.config.getProperty("http.port")), this.config.getProperty("http.host"),
+				res -> {
+					if (res.succeeded()) {
+						LOG.info("Started on port {} !", res.result().actualPort());
+					} else {
+						LOG.error("Error while starting server", res.cause());
+					}
+				});
 	}
 
 	private void initMetrics() {

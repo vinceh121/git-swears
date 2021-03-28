@@ -1,8 +1,10 @@
 package me.vinceh121.gitswears.graph;
 
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 import org.jfree.chart.JFreeChart;
+import org.jfree.svg.SVGGraphics2D;
 
 import me.vinceh121.gitswears.CountSummary;
 
@@ -21,6 +23,13 @@ public abstract class GraphGenerator {
 		final JFreeChart chart = this.generateChart();
 		final BufferedImage img = chart.createBufferedImage(this.width, this.height);
 		return img;
+	}
+	
+	public SVGGraphics2D generateSvg() {
+		final JFreeChart chart = this.generateChart();
+		final SVGGraphics2D graphics = new SVGGraphics2D(this.width,this.height);
+		chart.draw(graphics, new Rectangle(width, height));
+		return graphics;
 	}
 
 	public int getWidth() {
