@@ -125,7 +125,11 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 			}).onSuccess(git -> {
 				GitRequest.LOG.info("[{}] clone success for job {}", clientId, jobName);
 				this.checkSize(git, branch).onFailure(t -> {
-					this.error(ctx, 500, "Failed to pre-count commits", t);
+					if (t instanceof IllegalArgumentException) {
+						this.error(ctx, 400, t.getMessage());
+					} else {
+						this.error(ctx, 500, "Failed to pre-count commits", t);
+					}
 					this.unmarkInProgress(jobName);
 					this.deleteRepo(git.getRepository());
 				}).onSuccess(check -> {
@@ -167,8 +171,13 @@ public abstract class GitRequest<T> implements Handler<RoutingContext> {
 	private Future<Boolean> checkSize(final Git git, final String branch) {
 		return Future.future(promise -> {
 			try {
+				final String ref = "refs/heads/" + branch;
 				long count = 0;
-				final Iterator<RevCommit> it = git.log().addPath("refs/heads/" + branch).call().iterator();
+				if (!git.branchList().call().stream().anyMatch(r -> r.getName().equals(ref))) {
+					promise.fail(new IllegalArgumentException("The specified branch doesn't exist"));
+					return;
+				}
+				final Iterator<RevCommit> it = git.log().addPath(ref).call().iterator();
 				while (it.hasNext()) {
 					count++;
 					it.next();
