@@ -15,9 +15,12 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.ContentSource;
 import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.DiffEntry.Side;
+import org.eclipse.jgit.diff.Edit;
+import org.eclipse.jgit.diff.EditList;
+import org.eclipse.jgit.diff.HistogramDiff;
 import org.eclipse.jgit.diff.RawText;
+import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.errors.BinaryBlobException;
 import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
@@ -39,6 +42,7 @@ public class SwearCounter {
 	// private static final Logger LOG =
 	// LoggerFactory.getLogger(SwearCounter.class);
 	private static final Pattern WORD_PATTERN = Pattern.compile("\\W*\\w+\\W*", Pattern.CASE_INSENSITIVE);
+	private final HistogramDiff diffAlg = new HistogramDiff();
 	private final Map<AbbreviatedObjectId, CommitCount> map = new LinkedHashMap<>();
 	private final Map<String, WordCount> fynal = new Hashtable<>();
 	private final Collection<String> swears;
@@ -104,36 +108,41 @@ public class SwearCounter {
 		}
 	}
 
-	private void countDiff(final DiffEntry e, final AbbreviatedObjectId oid) throws IOException, BinaryBlobException {
-		final String newTxt = new String(this.open(Side.NEW, e).getRawContent());
-		final String oldTxt = new String(this.open(Side.OLD, e).getRawContent());
+	private void countDiff(final DiffEntry entry, final AbbreviatedObjectId oid)
+			throws IOException, BinaryBlobException {
+		final RawText oldTxt = this.open(Side.OLD, entry);
+		final RawText newTxt = this.open(Side.NEW, entry);
 
-		switch (e.getChangeType()) {
-		case MODIFY:
-		case ADD:
-			final Matcher newMatcher = SwearCounter.WORD_PATTERN.matcher(newTxt);
-			while (newMatcher.find()) {
-				final String word = newMatcher.group().toLowerCase().trim();
-				if (this.swears.contains(word)) {
-					this.getOrNewCommitCount(oid).getOrNew(word).increaseAdded();
+		final EditList edits = this.diffAlg.diff(RawTextComparator.DEFAULT, oldTxt, newTxt);
+
+		for (Edit e : edits) {
+			switch (e.getType()) {
+			case INSERT:
+			case REPLACE:
+				final Matcher newMatcher = SwearCounter.WORD_PATTERN
+						.matcher(new String(newTxt.getRawContent()).substring(e.getBeginB(), e.getEndB()));
+				while (newMatcher.find()) {
+					final String word = newMatcher.group().toLowerCase().trim();
+					if (this.swears.contains(word)) {
+						this.getOrNewCommitCount(oid).getOrNew(word).increaseAdded();
+					}
 				}
-			}
-			if (e.getChangeType() == ChangeType.ADD) {
+				break;
+			case DELETE:
+				final Matcher oldMatcher = SwearCounter.WORD_PATTERN
+						.matcher(new String(oldTxt.getRawContent()).substring(e.getBeginA(), e.getEndA()));
+				while (oldMatcher.find()) {
+					final String word = oldMatcher.group().toLowerCase().trim();
+					if (this.swears.contains(word)) {
+						this.getOrNewCommitCount(oid).getOrNew(word).increaseRemoved();
+					}
+				}
+				break;
+			case EMPTY:
+				break;
+			default:
 				break;
 			}
-		case DELETE:
-			final Matcher oldMatcher = SwearCounter.WORD_PATTERN.matcher(oldTxt);
-			while (oldMatcher.find()) {
-				final String word = oldMatcher.group().toLowerCase().trim();
-				if (this.swears.contains(word)) {
-					this.getOrNewCommitCount(oid).getOrNew(word).increaseRemoved();
-				}
-			}
-			if (e.getChangeType() == ChangeType.DELETE) {
-				break;
-			}
-		default:
-			break;
 		}
 	}
 
