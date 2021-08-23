@@ -14,11 +14,12 @@ import java.util.regex.Pattern;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.ContentSource;
+import org.eclipse.jgit.diff.DiffAlgorithm;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.Side;
 import org.eclipse.jgit.diff.Edit;
 import org.eclipse.jgit.diff.EditList;
-import org.eclipse.jgit.diff.HistogramDiff;
+import org.eclipse.jgit.diff.MyersDiff;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.errors.BinaryBlobException;
@@ -42,7 +43,7 @@ public class SwearCounter {
 	// private static final Logger LOG =
 	// LoggerFactory.getLogger(SwearCounter.class);
 	private static final Pattern WORD_PATTERN = Pattern.compile("\\W*\\w+\\W*", Pattern.CASE_INSENSITIVE);
-	private final HistogramDiff diffAlg = new HistogramDiff();
+	private final DiffAlgorithm diffAlg = MyersDiff.INSTANCE;
 	private final Map<AbbreviatedObjectId, CommitCount> map = new LinkedHashMap<>();
 	private final Map<String, WordCount> fynal = new Hashtable<>();
 	private final Collection<String> swears;
@@ -119,8 +120,9 @@ public class SwearCounter {
 			switch (e.getType()) {
 			case INSERT:
 			case REPLACE:
+				final String strNew = newTxt.getString(e.getBeginB(), e.getEndB(), false);
 				final Matcher newMatcher = SwearCounter.WORD_PATTERN
-						.matcher(new String(newTxt.getRawContent()).substring(e.getBeginB(), e.getEndB()));
+						.matcher(strNew);
 				while (newMatcher.find()) {
 					final String word = newMatcher.group().toLowerCase().trim();
 					if (this.swears.contains(word)) {
@@ -129,8 +131,9 @@ public class SwearCounter {
 				}
 				break;
 			case DELETE:
+				final String strDel = oldTxt.getString(e.getBeginA(), e.getEndA(), false);
 				final Matcher oldMatcher = SwearCounter.WORD_PATTERN
-						.matcher(new String(oldTxt.getRawContent()).substring(e.getBeginA(), e.getEndA()));
+						.matcher(strDel);
 				while (oldMatcher.find()) {
 					final String word = oldMatcher.group().toLowerCase().trim();
 					if (this.swears.contains(word)) {
