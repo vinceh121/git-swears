@@ -37,7 +37,7 @@
 
 		<swear.jarSuffix>dev</swear.jarSuffix>
 
-		<vertx.version>3.9.2</vertx.version>
+		<vertx.version>3.9.4</vertx.version>
 		<prometheus.version>0.9.0</prometheus.version>
 	</properties>
 
